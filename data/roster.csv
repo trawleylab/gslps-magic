@@ -1,0 +1,11 @@
+player_id,name,jersey,scorer_tier,ball_handler
+p1,Alex Chen,4,primary,TRUE
+p2,Jordan Reyes,5,primary,FALSE
+p3,Sam Whitfield,7,secondary,TRUE
+p4,Riley O'Connor,8,secondary,FALSE
+p5,Morgan Patel,10,secondary,TRUE
+p6,Cameron Brooks,11,role,FALSE
+p7,Devon Liu,14,role,TRUE
+p8,Taylor Nguyen,15,role,FALSE
+p9,Jamie Walsh,21,role,FALSE
+p10,Quinn Harper,23,role,FALSE

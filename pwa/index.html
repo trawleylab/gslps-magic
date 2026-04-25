@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GSLPS Magic — Sub Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1419">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Magic">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="court">
+  <header id="header">
+    <div class="hdr-team">
+      <h1 id="team-name">GSLPS Magic</h1>
+      <div id="half-label">Half 1 of 2</div>
+      <div id="sub-indicator" class="sub-indicator fresh">Next sub in 3:00</div>
+    </div>
+
+    <div class="hdr-clock">
+      <div id="clock-display">20:00</div>
+      <div class="hdr-clock-actions">
+        <button id="clock-btn" class="btn btn-primary" data-action="toggle-clock">Start</button>
+        <button class="btn btn-ghost" data-action="reset-clock">Reset</button>
+        <button id="next-half-btn" class="btn btn-warning" data-action="next-half" hidden>Start next half</button>
+      </div>
+    </div>
+
+    <div class="hdr-views">
+      <button class="btn btn-ghost" data-action="view-court">Court</button>
+      <button class="btn btn-ghost" data-action="view-settings">Settings</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="court-view">
+      <div class="court-bench-pane">
+        <div class="panel">
+          <h2>On Court</h2>
+          <div id="court" class="player-grid court-grid"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Bench</h2>
+          <div id="bench" class="player-grid bench-grid"></div>
+        </div>
+
+        <div id="action-bar" hidden></div>
+      </div>
+
+      <aside class="sidebar">
+        <h2>Minutes</h2>
+        <table class="minutes-table">
+          <thead>
+            <tr><th>#</th><th>Player</th><th>Min</th><th>State</th></tr>
+          </thead>
+          <tbody id="minutes-tbody"></tbody>
+        </table>
+        <div class="legend">
+          <span><span class="status-dot on"></span>on</span>
+          <span><span class="status-dot off"></span>off</span>
+          <span><span class="status-dot warn"></span>near limit</span>
+          <span><span class="status-dot over"></span>over limit</span>
+        </div>
+      </aside>
+    </section>
+
+    <section id="settings-view" hidden></section>
+  </main>
+
+  <div id="modal" hidden role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-action="cancel-sub"></div>
+    <div class="modal-content">
+      <div id="modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-warning" data-action="override-confirm">Override and confirm</button>
+        <button class="btn btn-ghost" data-action="cancel-sub">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

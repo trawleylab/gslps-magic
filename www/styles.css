@@ -1,0 +1,187 @@
+/* styles.css — courtside tablet UI
+ * Goals:
+ *   - Every tap target is >= 60px tall
+ *   - High contrast, glanceable from a metre away
+ *   - Court vs bench distinguishable by colour, not just label
+ */
+
+:root {
+  --tap-min:        72px;
+  --court-bg:       #f0f7ff;
+  --bench-bg:       #fafafa;
+  --primary-tier:   #1f6feb;
+  --secondary-tier: #5b8def;
+  --role-tier:      #94a3b8;
+  --warn-amber:     #f4a000;
+  --tired-bg:       #fff4d6;
+}
+
+/* ---- clock ---- */
+.clock-card .clock-display {
+  font-size: 4.5rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0 1rem;
+}
+.btn-clock {
+  min-height: var(--tap-min);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* ---- player buttons (court / bench) ---- */
+.player-btn {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  grid-template-areas: "jersey name badges";
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.5rem;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1.15rem;
+  transition: transform 0.05s ease, border-color 0.1s ease;
+}
+.player-btn:active     { transform: scale(0.98); }
+.player-btn.selected   { border-color: var(--primary-tier);
+                         box-shadow: 0 0 0 4px rgba(31,111,235,0.2); }
+.player-btn-court      { background: var(--court-bg); }
+.player-btn-bench      { background: var(--bench-bg); }
+.player-jersey {
+  grid-area: jersey;
+  font-weight: 800;
+  font-size: 1.4rem;
+  text-align: center;
+}
+.player-name { grid-area: name; font-weight: 600; }
+.player-badges {
+  grid-area: badges;
+  display: flex;
+  gap: 0.3rem;
+}
+.badge {
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: white;
+}
+.tier-badge.tier-primary   { background: var(--primary-tier); }
+.tier-badge.tier-secondary { background: var(--secondary-tier); }
+.tier-badge.tier-role      { background: var(--role-tier); }
+.bh-badge                  { background: #2b8a3e; }
+
+.tired-wrap .player-btn { background: var(--tired-bg) !important; }
+.tired-wrap .player-btn::before {
+  content: "⏱ tired";
+  position: absolute;
+  margin-left: 0.4rem;
+  margin-top: -0.4rem;
+  font-size: 0.75rem;
+  color: var(--warn-amber);
+  font-weight: 700;
+}
+
+/* ---- court controls ---- */
+.court-controls {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.btn-confirm, .btn-cancel {
+  flex: 1;
+  min-height: var(--tap-min);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.btn-suggest {
+  width: 100%;
+  min-height: var(--tap-min);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  background: #fff8e1;
+  border: 2px solid var(--warn-amber);
+  color: #6b4f00;
+}
+.btn-suggest-item {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  text-align: left;
+  min-height: 64px;
+  white-space: normal;
+}
+
+/* ---- modal warnings ---- */
+.rule-msg {
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  border-left: 5px solid var(--warn-amber);
+  background: #fffaf0;
+  font-size: 1.1rem;
+}
+.rule-warning { border-left-color: var(--warn-amber); }
+.rule-info    { border-left-color: #4a90e2; background: #f0f7ff; }
+
+/* ---- roster ---- */
+.roster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.roster-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ---- rule toggles ---- */
+.rule-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #eee;
+}
+.rule-label { font-size: 1.05rem; }
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 32px;
+}
+.switch input { display: none; }
+.switch .slider-knob {
+  position: absolute;
+  inset: 0;
+  background: #ccc;
+  border-radius: 999px;
+  transition: 0.2s;
+}
+.switch .slider-knob::before {
+  content: "";
+  position: absolute;
+  height: 26px; width: 26px;
+  left: 3px; top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.switch input:checked + .slider-knob { background: var(--primary-tier); }
+.switch input:checked + .slider-knob::before { transform: translateX(24px); }
+
+/* ---- selection summary ---- */
+.selection-summary p { font-size: 1.1rem; margin-bottom: 0.4rem; }
+.selection-summary p strong { color: var(--primary-tier); }
+
+.empty-msg, .muted { color: #666; padding: 0.8rem 0; }
+.muted p { margin-bottom: 0.3rem; }
+
+/* general button minimums for tablets */
+.btn-lg { min-height: var(--tap-min); font-size: 1.1rem; }
