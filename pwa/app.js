@@ -35,7 +35,7 @@ const DEFAULT_RULES = {
 };
 
 const DEFAULT_FORMAT = { halves: 2, halfMinutes: 20 };
-const DEFAULT_SUB_INTERVAL_MIN = 3;  // target seconds between substitutions
+const DEFAULT_SUB_INTERVAL_MIN = 4;  // target minutes between substitutions
 
 
 // -- 2. STATE -----------------------------------------------------------------
@@ -48,6 +48,10 @@ let tickHandle = null;  // setInterval id while clock is running
 let pendingSub = null;  // { courtSel, benchSel, failures } when warning modal is open
 
 function createDefaultGameState(roster) {
+  // Players default to "active" = playing today. Only active players go on
+  // the court / bench; inactive ones sit out the game entirely.
+  const seed = roster.map(p => ({ active: true, ...p }));
+  const active = seed.filter(p => p.active);
   return {
     teamName: 'GSLPS Magic',
     format: { ...DEFAULT_FORMAT },
@@ -55,11 +59,11 @@ function createDefaultGameState(roster) {
     clockSeconds: DEFAULT_FORMAT.halfMinutes * 60,
     clockRunning: false,
     gameEnded: false,
-    roster: roster.slice(),
-    onCourtIds: roster.slice(0, 5).map(p => p.id),
-    benchIds:   roster.slice(5).map(p => p.id),
+    roster: seed,
+    onCourtIds: active.slice(0, 5).map(p => p.id),
+    benchIds:   active.slice(5).map(p => p.id),
     playerStats: Object.fromEntries(
-      roster.map(p => [p.id, { secondsPlayed: 0, secondsSinceChange: 0 }])
+      seed.map(p => [p.id, { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 }])
     ),
     rules: structuredClone(DEFAULT_RULES),
     subIntervalMinutes: DEFAULT_SUB_INTERVAL_MIN,
@@ -104,6 +108,10 @@ function fmtMinutes(seconds) {
 
 function getPlayer(id) {
   return gameState.roster.find(p => p.id === id);
+}
+
+function activeRoster() {
+  return gameState.roster.filter(p => p.active !== false);
 }
 
 function totalElapsedSeconds() {
@@ -185,6 +193,54 @@ function runRules(proposedOnCourt) {
     .filter(r => gameState.rules[r.id]?.enabled)
     .map(r => ({ rule: r, result: r.check(proposedOnCourt, gameState) }))
     .filter(x => !x.result.passed);
+}
+
+
+// -- 4b. SUGGESTION ENGINE ----------------------------------------------------
+//
+// Picks ONE NEXT OFF + ONE NEXT ON each render, used by the hero panel and
+// the per-card "NEXT" badges.
+//
+// Court "next off": longest current shift wins. Tiebreaker: fewest breaks
+// taken (so the same kid doesn't always come off first). Final tiebreaker:
+// roster order, so the suggestion is stable within a render.
+//
+// Bench "next on": longest current rest wins. Tiebreaker: least minutes played
+// overall (fairness — the kids who haven't had much court time get priority).
+// Final tiebreaker: roster order.
+
+function getSuggestion() {
+  if (gameState.gameEnded) return null;
+  const onCourt = gameState.onCourtIds;
+  const bench   = gameState.benchIds;
+  if (onCourt.length === 0 || bench.length === 0) return null;
+
+  // Block-rotation rule: rotate the entire bench each substitution.
+  //   8 active → bench 3 → 3-for-3 swap
+  //   7 active → bench 2 → 2-for-2 swap
+  //   6 active → bench 1 → 1-for-1 swap (current single-sub case)
+  //   5 active → bench 0 → no swap possible
+  // Capped at min(bench, court) just in case bench somehow exceeds court size.
+  const N = Math.min(bench.length, onCourt.length);
+
+  const idx  = id => gameState.roster.findIndex(p => p.id === id);
+  const stat = id => gameState.playerStats[id] || { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 };
+
+  const off = onCourt.slice().sort((a, b) => {
+    const sa = stat(a), sb = stat(b);
+    return sb.secondsSinceChange - sa.secondsSinceChange   // longest shift first
+        || sa.breaksTaken         - sb.breaksTaken          // fewer breaks → overdue for one
+        || idx(a)                 - idx(b);                  // stable
+  }).slice(0, N);
+
+  const on = bench.slice().sort((a, b) => {
+    const sa = stat(a), sb = stat(b);
+    return sb.secondsSinceChange - sa.secondsSinceChange   // longest rest first
+        || sa.secondsPlayed       - sb.secondsPlayed         // less court time = more deserving
+        || idx(a)                 - idx(b);
+  }).slice(0, N);
+
+  return { off, on, n: N };
 }
 
 
@@ -338,6 +394,11 @@ function commitSubs() {
   for (const id of [...courtSel, ...benchSel]) {
     gameState.playerStats[id].secondsSinceChange = 0;
   }
+  // A "break" = a sub OFF the court. Used to keep rotations fair so the same
+  // player isn't always picked first to come off.
+  for (const id of courtSel) {
+    gameState.playerStats[id].breaksTaken = (gameState.playerStats[id].breaksTaken || 0) + 1;
+  }
   gameState.lastSubGameSec = totalElapsedSeconds();
 
   gameState.selectedCourtIds = [];
@@ -350,6 +411,17 @@ function commitSubs() {
 function cancelPendingSub() {
   pendingSub = null;
   render();
+}
+
+// Commit the suggestion shown in the hero panel — sets the selection to the
+// suggested group and runs the same commit path as a manual sub (so warnings
+// still surface).
+function commitSuggestion() {
+  const sug = getSuggestion();
+  if (!sug) return;
+  gameState.selectedCourtIds = sug.off.slice();
+  gameState.selectedBenchIds = sug.on.slice();
+  attemptCommitSubs();
 }
 
 
@@ -366,19 +438,58 @@ function updatePlayer(id, patch) {
 function addPlayer() {
   const nextNumber = Math.max(0, ...gameState.roster.map(p => p.number)) + 1;
   const newId = 'p' + Date.now().toString(36);
-  gameState.roster.push({ id: newId, name: 'New Player', number: nextNumber });
+  gameState.roster.push({ id: newId, name: 'New Player', number: nextNumber, active: true });
   gameState.benchIds.push(newId);
-  gameState.playerStats[newId] = { secondsPlayed: 0, secondsSinceChange: 0 };
+  gameState.playerStats[newId] = { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 };
   persist();
   render();
 }
 
 function removePlayer(id) {
-  if (!confirm('Remove this player from the roster?')) return;
+  if (!confirm('Remove this player from the roster permanently? (For "not playing today" use the Playing today checkbox instead.)')) return;
   gameState.roster      = gameState.roster.filter(p => p.id !== id);
   gameState.onCourtIds  = gameState.onCourtIds.filter(x => x !== id);
   gameState.benchIds    = gameState.benchIds.filter(x => x !== id);
   delete gameState.playerStats[id];
+  persist();
+  render();
+}
+
+// Toggle "playing today" for a player. Inactive players are pulled off the
+// court / bench (so they don't show up in the rotation) but their roster
+// entry and stats are preserved. Reactivating drops them back on the bench.
+function setPlayerActive(id, active) {
+  const p = getPlayer(id);
+  if (!p) return;
+  p.active = active;
+  if (!active) {
+    const wasOnCourt = gameState.onCourtIds.includes(id);
+    gameState.onCourtIds = gameState.onCourtIds.filter(x => x !== id);
+    gameState.benchIds   = gameState.benchIds.filter(x => x !== id);
+    gameState.selectedCourtIds = gameState.selectedCourtIds.filter(x => x !== id);
+    gameState.selectedBenchIds = gameState.selectedBenchIds.filter(x => x !== id);
+    // Pull a bench player up to fill the empty court slot — otherwise we'd
+    // leave the team short and the suggestion engine would compute against a
+    // 4-player court. Pick by the same "longest rest first" heuristic as the
+    // suggestion engine, so the promotion is fair.
+    if (wasOnCourt && gameState.benchIds.length > 0 && gameState.onCourtIds.length < 5) {
+      const idx  = pid => gameState.roster.findIndex(p => p.id === pid);
+      const stat = pid => gameState.playerStats[pid] || { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 };
+      const pick = gameState.benchIds.slice().sort((a, b) => {
+        const sa = stat(a), sb = stat(b);
+        return sb.secondsSinceChange - sa.secondsSinceChange
+            || sa.secondsPlayed       - sb.secondsPlayed
+            || idx(a)                 - idx(b);
+      })[0];
+      gameState.benchIds   = gameState.benchIds.filter(x => x !== pick);
+      gameState.onCourtIds.push(pick);
+      gameState.playerStats[pick].secondsSinceChange = 0;
+    }
+  } else {
+    if (!gameState.onCourtIds.includes(id) && !gameState.benchIds.includes(id)) {
+      gameState.benchIds.push(id);
+    }
+  }
   persist();
   render();
 }
@@ -451,6 +562,7 @@ function render() {
   if (gameState.view === 'court') {
     $('#court-view').hidden = false;
     $('#settings-view').hidden = true;
+    renderHeroPanel();
     renderCourt();
     renderBench();
     renderActionBar();
@@ -461,6 +573,55 @@ function render() {
     renderSettings();
   }
   renderModal();
+}
+
+// Hero "next swap" panel. Shows the single recommended swap as the focal
+// point of the screen so the coach has one obvious thing to do.
+//
+// Visual urgency mirrors the sub-due indicator state:
+//   - fresh   → dimmed (recommendation is ready, but no rush)
+//   - warn    → highlighted amber (sub due in <30s)
+//   - over    → pulsing red (overdue)
+//
+// Hides while the coach has any manual selection in progress (the action bar
+// takes over — one thing at a time on screen).
+function renderHeroPanel() {
+  const wrap = $('#hero-panel');
+  const sug = getSuggestion();
+  const hasSelection = gameState.selectedCourtIds.length > 0 ||
+                       gameState.selectedBenchIds.length > 0;
+  if (!sug || hasSelection) {
+    wrap.hidden = true;
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+
+  // Visual urgency mirrors the sub-due indicator.
+  const intervalSec = (gameState.subIntervalMinutes || DEFAULT_SUB_INTERVAL_MIN) * 60;
+  const since = totalElapsedSeconds() - (gameState.lastSubGameSec || 0);
+  const remaining = intervalSec - since;
+  const urgency = remaining <= 0 ? 'overdue' : remaining <= 30 ? 'due' : 'fresh';
+
+  const fmtList = ids => ids
+    .map(id => { const p = getPlayer(id); return `#${p.number} ${escapeHtml(p.name)}`; })
+    .join(', ');
+
+  wrap.className = 'hero-panel ' + urgency;
+  wrap.innerHTML = `
+    <div class="hero-content">
+      <div class="hero-label">NEXT SWAP — ${sug.n} for ${sug.n}</div>
+      <div class="hero-line">
+        <span class="hero-side-label off">OFF</span>
+        <span class="hero-names">${fmtList(sug.off)}</span>
+      </div>
+      <div class="hero-line">
+        <span class="hero-side-label on">ON</span>
+        <span class="hero-names">${fmtList(sug.on)}</span>
+      </div>
+    </div>
+    <button class="btn btn-primary hero-action" data-action="commit-suggestion">Make this swap</button>
+  `;
 }
 
 function renderHeader() {
@@ -510,9 +671,10 @@ function renderSubIndicator() {
 }
 
 function renderCourt() {
+  const sug = getSuggestion();
   const wrap = $('#court');
   wrap.innerHTML = '';
-  for (const id of gameState.onCourtIds) wrap.appendChild(playerCard(id, 'court'));
+  for (const id of gameState.onCourtIds) wrap.appendChild(playerCard(id, 'court', sug));
   while (wrap.children.length < 5) {
     const empty = document.createElement('div');
     empty.className = 'player-card empty';
@@ -522,16 +684,20 @@ function renderCourt() {
 }
 
 function renderBench() {
+  const sug = getSuggestion();
   const wrap = $('#bench');
   wrap.innerHTML = '';
   if (gameState.benchIds.length === 0) {
     wrap.innerHTML = '<div class="empty-note">Bench empty</div>';
     return;
   }
-  for (const id of gameState.benchIds) wrap.appendChild(playerCard(id, 'bench'));
+  for (const id of gameState.benchIds) wrap.appendChild(playerCard(id, 'bench', sug));
 }
 
-function playerCard(id, location) {
+// Compact player card: just number + name. All numerical detail (minutes,
+// breaks, on/off time) lives in the sidebar to keep the main view scannable.
+// The NEXT badge marks the player the suggestion engine has picked.
+function playerCard(id, location, sug) {
   const p = getPlayer(id);
   const div = document.createElement('div');
   if (!p) {
@@ -549,21 +715,22 @@ function playerCard(id, location) {
   const consMin  = stat.secondsSinceChange / 60;
   let fatigueClass = '';
   if (location === 'court') {
-    if (consMin >= limitMin)        fatigueClass = 'fatigue-over';
+    if (consMin >= limitMin)          fatigueClass = 'fatigue-over';
     else if (consMin >= limitMin - 1) fatigueClass = 'fatigue-warn';
   }
 
-  div.className = `player-card ${location} ${selected ? 'selected' : ''} ${fatigueClass}`.trim();
+  const isNext = sug && (
+    (location === 'court' && sug.off.includes(id)) ||
+    (location === 'bench' && sug.on.includes(id))
+  );
+
+  div.className = `player-card ${location} ${selected ? 'selected' : ''} ${fatigueClass} ${isNext ? 'next' : ''}`.trim();
   div.dataset.action = location === 'court' ? 'select-court' : 'select-bench';
   div.dataset.id = id;
   div.innerHTML = `
-    <div class="pc-row">
-      <span class="pc-number">#${p.number}</span>
-      <span class="pc-name">${escapeHtml(p.name)}</span>
-    </div>
-    <div class="pc-row pc-meta">
-      <span class="pc-mins">${fmtMinutes(stat.secondsPlayed)} min</span>
-    </div>
+    ${isNext ? `<span class="next-badge">${location === 'court' ? 'NEXT OFF' : 'NEXT ON'}</span>` : ''}
+    <span class="pc-number">#${p.number}</span>
+    <span class="pc-name">${escapeHtml(p.name)}</span>
   `;
   return div;
 }
@@ -607,9 +774,10 @@ function renderActionBar() {
 function renderSidebar() {
   const tbody = $('#minutes-tbody');
   tbody.innerHTML = '';
+  // Active players only — inactive ones aren't rotating today.
   // Sort: most-played first so the rotation imbalance is glanceable.
-  const rows = gameState.roster
-    .map(p => ({ p, stat: gameState.playerStats[p.id] || { secondsPlayed: 0, secondsSinceChange: 0 } }))
+  const rows = activeRoster()
+    .map(p => ({ p, stat: gameState.playerStats[p.id] || { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 } }))
     .sort((a, b) => b.stat.secondsPlayed - a.stat.secondsPlayed);
 
   const limitMin = gameState.rules.consecutiveMinutes.limitMinutes;
@@ -617,7 +785,7 @@ function renderSidebar() {
     const onCourt = gameState.onCourtIds.includes(p.id);
     const consMin = stat.secondsSinceChange / 60;
     let dotClass = onCourt ? 'on' : 'off';
-    if (onCourt && consMin >= limitMin) dotClass = 'over';
+    if (onCourt && consMin >= limitMin)         dotClass = 'over';
     else if (onCourt && consMin >= limitMin - 1) dotClass = 'warn';
     const stateLabel = onCourt
       ? `${Math.floor(consMin)}m on`
@@ -627,7 +795,8 @@ function renderSidebar() {
       <td><span class="status-dot ${dotClass}"></span>#${p.number}</td>
       <td class="cell-name">${escapeHtml(p.name)}</td>
       <td class="cell-num">${fmtMinutes(stat.secondsPlayed)}</td>
-      <td class="cell-num">${stateLabel}</td>
+      <td class="cell-num">${stat.breaksTaken || 0}</td>
+      <td class="cell-state">${stateLabel}</td>
     `;
     tbody.appendChild(tr);
   }
@@ -687,11 +856,13 @@ function renderSettings() {
       <h3>Roster</h3>
       <table class="roster-edit">
         <thead><tr>
-          <th>#</th><th>Name</th><th></th>
+          <th>Playing<br>today</th><th>#</th><th>Name</th><th></th>
         </tr></thead>
         <tbody>
           ${gameState.roster.map(p => `
-            <tr>
+            <tr class="${p.active === false ? 'inactive' : ''}">
+              <td class="cell-active"><input type="checkbox" ${p.active !== false ? 'checked' : ''}
+                         data-action="toggle-active" data-id="${p.id}"></td>
               <td><input type="number" value="${p.number}"
                          data-action="edit-number" data-id="${p.id}" class="num-input"></td>
               <td><input type="text" value="${escapeHtml(p.name)}"
@@ -701,6 +872,7 @@ function renderSettings() {
             </tr>`).join('')}
         </tbody>
       </table>
+      <p class="settings-hint">Untick "Playing today" to sit a player out for this game without removing them from the roster. Their stats are preserved if they come back.</p>
       <button class="btn" data-action="add-player">+ Add player</button>
     </section>
 
@@ -750,6 +922,7 @@ document.addEventListener('click', (e) => {
     case 'clear-selection':  clearSelection(); break;
     case 'override-confirm': commitSubs(); break;
     case 'cancel-sub':       cancelPendingSub(); break;
+    case 'commit-suggestion': commitSuggestion(); break;
     case 'toggle-clock':     gameState.clockRunning ? stopClock() : startClock(); break;
     case 'reset-clock':      resetClock(); break;
     case 'next-half':        advanceHalf(); break;
@@ -773,6 +946,7 @@ document.addEventListener('change', (e) => {
   switch (action) {
     case 'edit-number':    { const v = intVal(); if (v !== null) updatePlayer(id, { number: v }); break; }
     case 'edit-name':        updatePlayer(id, { name: t.value }); break;
+    case 'toggle-active':    setPlayerActive(id, t.checked); break;
     case 'toggle-rule':      setRuleEnabled(t.dataset.rule, t.checked); break;
     case 'set-rule-param':   { const v = intVal(); if (v !== null && v > 0) setRuleParam(t.dataset.rule, t.dataset.key, v); break; }
     case 'set-halves':       { const v = intVal(); if (v !== null && v >= 1 && v <= 4) setFormat(gameState.format.halfMinutes, v); break; }
@@ -795,8 +969,12 @@ async function init() {
     }
     if (!gameState.playerStats) gameState.playerStats = {};
     for (const p of gameState.roster) {
+      if (p.active === undefined) p.active = true;
       if (!gameState.playerStats[p.id]) {
-        gameState.playerStats[p.id] = { secondsPlayed: 0, secondsSinceChange: 0 };
+        gameState.playerStats[p.id] = { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 };
+      }
+      if (gameState.playerStats[p.id].breaksTaken == null) {
+        gameState.playerStats[p.id].breaksTaken = 0;
       }
     }
     if (!gameState.format) gameState.format = { ...DEFAULT_FORMAT };

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GSLPS Magic — Rotation Chart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1419">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Chart">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="chart">
+  <header id="header">
+    <div class="hdr-team">
+      <h1 id="team-name">GSLPS Magic</h1>
+      <div id="half-label">Half 1 of 2</div>
+    </div>
+
+    <div class="hdr-clock">
+      <div id="clock-display">20:00</div>
+      <div class="hdr-clock-actions">
+        <button id="clock-btn" class="btn btn-primary" data-action="toggle-clock">Start</button>
+        <button class="btn btn-ghost" data-action="reset-clock">Reset</button>
+        <button id="next-half-btn" class="btn btn-warning" data-action="next-half" hidden>Start next half</button>
+      </div>
+    </div>
+
+    <div class="hdr-views">
+      <button class="btn btn-ghost" data-action="view-chart">Chart</button>
+      <button class="btn btn-ghost" data-action="view-settings">Settings</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="chart-view">
+      <div class="chart-pane">
+        <section id="now-panel" class="now-panel"></section>
+        <section id="schedule" class="schedule-wrap"></section>
+      </div>
+      <aside class="legend-pane">
+        <h2>Players</h2>
+        <div id="legend" class="legend-grid"></div>
+      </aside>
+    </section>
+
+    <section id="settings-view" hidden></section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -158,14 +158,16 @@ main {
 .bench-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
 .player-card {
-  min-height: 90px;
-  padding: 0.7rem 0.8rem;
+  position: relative;          /* anchor for the NEXT badge */
+  min-height: 72px;
+  padding: 0.6rem 0.8rem;
   border: 2px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 0.15rem;
   cursor: pointer;
   transition: transform 0.05s, border-color 0.1s, background 0.1s;
 }
@@ -179,6 +181,11 @@ main {
 }
 .player-card.fatigue-warn { border-color: var(--warning); background: var(--warning-bg); }
 .player-card.fatigue-over { border-color: var(--danger);  background: var(--danger-bg); }
+.player-card.next {
+  /* Subtle highlight on the suggested player; the hero panel is the loud signal. */
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(255, 140, 66, 0.25);
+}
 .player-card.empty {
   background: transparent;
   border: 2px dashed var(--border);
@@ -188,18 +195,90 @@ main {
   cursor: default;
 }
 
-.pc-row { display: flex; gap: 0.5rem; align-items: baseline; }
-.pc-meta { justify-content: space-between; align-items: center; margin-top: 0.4rem; }
 .pc-number {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--primary);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
-.pc-name { font-size: 1rem; font-weight: 600; }
-.pc-mins { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pc-name { font-size: 0.95rem; font-weight: 600; line-height: 1.15; }
+
+.next-badge {
+  position: absolute;
+  top: -0.5rem; right: 0.5rem;
+  background: var(--primary);
+  color: var(--primary-fg);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+}
 
 .empty-note { color: var(--muted); font-style: italic; padding: 0.5rem; }
+
+/* ---------- Hero "Next swap" panel ---------- */
+
+.hero-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+.hero-panel.fresh   { opacity: 0.65; }
+.hero-panel.due     { border-color: var(--warning); background: var(--warning-bg); opacity: 1; }
+.hero-panel.overdue { border-color: var(--danger);  background: var(--danger-bg);  opacity: 1; animation: pulse 1.4s infinite; }
+
+.hero-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.hero-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.hero-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.hero-side-label {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.hero-side-label.off { background: var(--danger);  color: #fff; }
+.hero-side-label.on  { background: var(--on-court); color: #fff; }
+.hero-names {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.hero-action {
+  flex-shrink: 0;
+  min-width: 170px;
+}
 
 /* ---------- Action bar (sub confirmation) ---------- */
 
@@ -348,6 +427,10 @@ main {
   text-align: left;
 }
 .roster-edit th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
+.roster-edit tr.inactive td:not(.cell-active) { opacity: 0.4; }
+.roster-edit .cell-active { text-align: center; }
+.roster-edit .cell-active input { width: 22px; height: 22px; cursor: pointer; }
+.settings-hint { color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; }
 
 /* ---------- Modal ---------- */
 

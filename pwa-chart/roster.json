@@ -1,0 +1,12 @@
+{
+  "players": [
+    { "id": "p01", "name": "Levi Mu",          "number": 8  },
+    { "id": "p02", "name": "Henry Trawley",    "number": 10 },
+    { "id": "p03", "name": "Dylan Hong",       "number": 15 },
+    { "id": "p04", "name": "Ezra Perera",      "number": 19 },
+    { "id": "p05", "name": "Hymns Loo",        "number": 20 },
+    { "id": "p06", "name": "Oliver Archibald", "number": 35 },
+    { "id": "p07", "name": "Kian Keshav",      "number": 80 },
+    { "id": "p08", "name": "Steven Chen",      "number": 86 }
+  ]
+}

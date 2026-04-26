@@ -17,7 +17,13 @@
       "Bash(lsof -ti:8765)",
       "Bash(xargs kill *)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(python3 -c \"import json; json.load\\(open\\('roster.json'\\)\\)\")"
+      "Bash(python3 -c \"import json; json.load\\(open\\('roster.json'\\)\\)\")",
+      "Bash(gh --version)",
+      "Bash(brew --version)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://github.com/trawleylab/gslps-magic\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}  type=%{content_type}\\\\n\" \"https://trawleylab.github.io/gslps-magic/\")",
+      "Bash(curl -sIL \"https://trawleylab.github.io/gslps-magic/pwa/index.html\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://trawleylab.github.io/gslps-magic/README.md\")"
     ]
   }
 }

@@ -169,18 +169,64 @@ skipped entirely by `runRules()`.
 
 ## How the substitution flow works
 
-- Tap a player on court → they're selected (cyan border).
-- Tap a player on bench → they're selected.
-- **As soon as exactly 1 court + 1 bench are selected, the swap commits
-  immediately** (after the rule check). This is the fast path for the most
-  common case.
-- For multi-subs: tap multiple court players first (or multiple bench
-  first). When you have matching counts ≥ 2 each, a **Confirm n-for-n**
-  button appears in the action bar. Tap to commit.
-- If a rule fails, the warning modal opens. **Override and confirm** still
-  commits; **Cancel** closes the modal and leaves your selection intact so
-  you can pick someone else.
+The court view is built around one focal element: the **Next Swap** hero
+panel at the top, showing the recommended sub. Most of the time the coach
+just glances and taps **Make this swap**.
+
+The recommendation algorithm rotates **the entire bench** in each swap. This
+matches the standard junior-basketball block-rotation rules:
+
+| Active players | Bench size | Suggested swap | Pattern                              |
+|----------------|------------|----------------|--------------------------------------|
+| 8              | 3          | 3-for-3        | sub 3 every block, 4 blocks per half |
+| 7              | 2          | 2-for-2        | sub 2 every block                    |
+| 6              | 1          | 1-for-1        | sub 1 every block                    |
+| 5              | 0          | none           | everyone plays                       |
+
+Within that swap:
+
+- **OFF** = on-court players ranked by longest current shift. Tiebreaker:
+  fewest breaks taken so far (so the same kid doesn't always come off
+  first). Final tiebreaker: roster order.
+- **ON** = bench players ranked by longest current rest. Tiebreaker:
+  least minutes played overall (fairness). Final tiebreaker: roster order.
+
+### Marking who's playing today
+
+In **Settings → Roster**, the **Playing today** checkbox sits a player out
+for the current game without removing them from the roster. Inactive
+players don't appear on court, bench, sidebar, or in the suggestion. Their
+stats are preserved if they come back in a later game.
+
+So if Hymns isn't playing this week, untick his checkbox and the team is
+treated as 7 players — the suggestion engine automatically switches to
+**2-for-2 swaps**.
+
+The hero panel is **dimmed** when the sub interval is fresh, **highlighted
+amber** when within 30s of due, and **pulsing red** when overdue — mirroring
+the small "Next sub" indicator under the team name.
+
+### Manual override (e.g. injury)
+
+The hero panel is just a shortcut. To pick a different player at any time:
+
+- Tap a player on court → they're selected (cyan border). The hero panel
+  hides and the action bar takes over.
+- Tap a player on bench → if exactly 1 court + 1 bench are selected, the
+  swap commits immediately (after the rule check).
+- For multi-subs: tap multiple court players first, then multiple bench
+  players. When counts match (≥ 2 each), a **Confirm n-for-n** button
+  appears in the action bar.
+- If a rule fails, a warning modal opens. **Override and confirm** still
+  commits; **Cancel** leaves your selection intact.
 - Tap a selected player to deselect, or use **Clear selection**.
+
+### Tracking who's had a break
+
+Each time a player gets subbed off, their **breaks** count goes up by one.
+The sidebar shows a `Brk` column so the coach can scan rotation fairness.
+The recommendation engine uses breaks-taken as a tiebreaker so kids with
+fewer breaks get pulled off sooner.
 
 ## Game format
 
@@ -197,8 +243,8 @@ Under the half label in the header, the app shows a small countdown:
 - **`Sub due in 0:25`** (amber) — within 30s of the target interval.
 - **`Sub overdue 0:15`** (red, pulsing) — past the target.
 
-The target interval defaults to **3 minutes** (kids on the bench get bored
-fast). Edit it in **Settings → Game format → Target sub interval (min)**.
+The target interval defaults to **4 minutes**. Edit it in
+**Settings → Game format → Target sub interval (min)**.
 The countdown is in *game-clock* time (a paused clock pauses the indicator)
 and resets on every committed sub and at halftime.
 

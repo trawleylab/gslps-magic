@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8765", "--directory", "pwa"],
       "port": 8765
+    },
+    {
+      "name": "pwa-chart",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "pwa-chart"],
+      "port": 8766
     }
   ]
 }
