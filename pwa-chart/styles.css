@@ -162,15 +162,52 @@ main { flex: 1; min-height: 0; overflow: hidden; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 7px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
 }
-.chip-num {
-  color: var(--primary);
+
+/* ---------- NEXT SUB panel (preview of upcoming changeover) ---------- */
+
+.next-panel {
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  border-radius: 14px;
+  padding: 0.7rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.next-label {
+  font-size: 0.8rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+.next-time {
+  margin-left: 0.5rem;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.next-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+.next-side {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 5px;
+  color: #fff;
+}
+.next-side.off { background: var(--danger); }
+.next-side.on  { background: var(--on-court); }
 
 /* ---------- Schedule table ---------- */
 

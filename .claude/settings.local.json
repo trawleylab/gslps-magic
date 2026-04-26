@@ -23,7 +23,9 @@
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://github.com/trawleylab/gslps-magic\")",
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}  type=%{content_type}\\\\n\" \"https://trawleylab.github.io/gslps-magic/\")",
       "Bash(curl -sIL \"https://trawleylab.github.io/gslps-magic/pwa/index.html\")",
-      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://trawleylab.github.io/gslps-magic/README.md\")"
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://trawleylab.github.io/gslps-magic/README.md\")",
+      "Bash(node --check pwa/app.js)",
+      "Bash(node --check pwa-chart/app.js)"
     ]
   }
 }

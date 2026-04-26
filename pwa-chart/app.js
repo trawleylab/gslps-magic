@@ -93,6 +93,12 @@ function escapeHtml(s) {
   ));
 }
 
+// Coach calls kids by first name — that's what we display.
+function firstName(name) {
+  const s = String(name || '').trim();
+  return s ? s.split(/\s+/)[0] : '?';
+}
+
 function getPlayer(id) { return gameState.roster.find(p => p.id === id); }
 function activeRoster() { return gameState.roster.filter(p => p.active !== false); }
 
@@ -146,6 +152,18 @@ function currentBlockIndex() {
   const elapsedThisHalf = gameState.halfMinutes * 60 - gameState.clockSeconds;
   const inHalf = Math.min(gameState.blocksPerHalf - 1, Math.floor(elapsedThisHalf / blockSec));
   return (gameState.currentHalf - 1) * gameState.blocksPerHalf + inHalf;
+}
+
+// Diff between the current block and the next: who's coming OFF, who's coming ON.
+function nextSubInfo(sched) {
+  const idx = currentBlockIndex();
+  if (idx == null) return null;
+  if (idx >= sched.blocks.length - 1) return null;   // last block of game — no next sub
+  const cur = sched.blocks[idx];
+  const next = sched.blocks[idx + 1];
+  const off = cur.court.filter(p => !next.court.find(q => q.id === p.id));
+  const on  = next.court.filter(p => !cur.court.find(q => q.id === p.id));
+  return { off, on, next };
 }
 
 
@@ -290,6 +308,7 @@ function render() {
     $('#settings-view').hidden = true;
     const sched = generateSchedule();
     renderNowPanel(sched);
+    renderNextPanel(sched);
     renderSchedule(sched);
     renderLegend();
   } else {
@@ -326,7 +345,7 @@ function renderHeader() {
 }
 
 function fmtPlayerList(players) {
-  return players.map(p => `<span class="chip"><span class="chip-num">#${p.number}</span> ${escapeHtml(p.name)}</span>`).join('');
+  return players.map(p => `<span class="chip">${escapeHtml(firstName(p.name))}</span>`).join('');
 }
 
 function renderNowPanel(sched) {
@@ -357,6 +376,29 @@ function renderNowPanel(sched) {
   `;
 }
 
+function renderNextPanel(sched) {
+  const wrap = $('#next-panel');
+  if (sched.error || gameState.gameEnded) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+  const info = nextSubInfo(sched);
+  if (!info || (info.off.length === 0 && info.on.length === 0)) {
+    wrap.hidden = true;
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+  wrap.innerHTML = `
+    <div class="next-label">NEXT SUB <span class="next-time">at ${fmtMinSec(info.next.startMin)}</span></div>
+    <div class="next-row">
+      <span class="next-side off">OFF</span>
+      <div class="chip-list">${fmtPlayerList(info.off)}</div>
+    </div>
+    <div class="next-row">
+      <span class="next-side on">ON</span>
+      <div class="chip-list">${fmtPlayerList(info.on)}</div>
+    </div>
+  `;
+}
+
 function renderSchedule(sched) {
   const wrap = $('#schedule');
   if (sched.error) { wrap.innerHTML = ''; return; }
@@ -379,8 +421,8 @@ function renderSchedule(sched) {
       const cls = b.idx === currentIdx ? 'current' : '';
       html += `<tr class="${cls}">
         <td class="cell-time">${fmtMinSec(b.startMin)} – ${fmtMinSec(b.endMin)}</td>
-        <td>${b.court.map(p => `#${p.number}`).join(', ')}</td>
-        <td>${b.bench.length ? b.bench.map(p => `#${p.number}`).join(', ') : '—'}</td>
+        <td>${b.court.map(p => escapeHtml(firstName(p.name))).join(', ')}</td>
+        <td>${b.bench.length ? b.bench.map(p => escapeHtml(firstName(p.name))).join(', ') : '—'}</td>
       </tr>`;
     }
     html += `</tbody></table>`;
@@ -390,9 +432,9 @@ function renderSchedule(sched) {
 
 function renderLegend() {
   const wrap = $('#legend');
-  const active = activeRoster().slice().sort((a, b) => a.number - b.number);
+  const active = activeRoster();
   wrap.innerHTML = active.map(p =>
-    `<span class="legend-item"><span class="chip-num">#${p.number}</span> ${escapeHtml(p.name)}</span>`
+    `<span class="legend-item">${escapeHtml(firstName(p.name))}</span>`
   ).join('');
 }
 

@@ -125,6 +125,12 @@ function escapeHtml(s) {
   ));
 }
 
+// Display helper — coach calls kids by first name, so that's all we show.
+function firstName(name) {
+  const s = String(name || '').trim();
+  return s ? s.split(/\s+/)[0] : '?';
+}
+
 
 // -- 4. RULE ENGINE -----------------------------------------------------------
 //
@@ -154,7 +160,7 @@ const RULES = [
       return {
         passed: false,
         severity: 'warning',
-        message: `${offenders.map(p => `#${p.number} ${p.name}`).join(', ')} ` +
+        message: `${offenders.map(p => firstName(p.name)).join(', ')} ` +
                  `${offenders.length === 1 ? 'has' : 'have'} been on for over ` +
                  `${state.rules.consecutiveMinutes.limitMinutes} min — needs a rest.`
       };
@@ -177,7 +183,7 @@ const RULES = [
       if (outliers.length === 0) return { passed: true };
 
       const names = outliers
-        .map(({ p, mins }) => `#${p.number} ${p.name} (${mins.toFixed(0)} min)`)
+        .map(({ p, mins }) => `${firstName(p.name)} (${mins.toFixed(0)} min)`)
         .join(', ');
       return {
         passed: false,
@@ -604,7 +610,7 @@ function renderHeroPanel() {
   const urgency = remaining <= 0 ? 'overdue' : remaining <= 30 ? 'due' : 'fresh';
 
   const fmtList = ids => ids
-    .map(id => { const p = getPlayer(id); return `#${p.number} ${escapeHtml(p.name)}`; })
+    .map(id => escapeHtml(firstName(getPlayer(id).name)))
     .join(', ');
 
   wrap.className = 'hero-panel ' + urgency;
@@ -729,8 +735,7 @@ function playerCard(id, location, sug) {
   div.dataset.id = id;
   div.innerHTML = `
     ${isNext ? `<span class="next-badge">${location === 'court' ? 'NEXT OFF' : 'NEXT ON'}</span>` : ''}
-    <span class="pc-number">#${p.number}</span>
-    <span class="pc-name">${escapeHtml(p.name)}</span>
+    <span class="pc-name">${escapeHtml(firstName(p.name))}</span>
   `;
   return div;
 }
@@ -792,8 +797,7 @@ function renderSidebar() {
       : `${Math.floor(consMin)}m rest`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="status-dot ${dotClass}"></span>#${p.number}</td>
-      <td class="cell-name">${escapeHtml(p.name)}</td>
+      <td class="cell-name"><span class="status-dot ${dotClass}"></span>${escapeHtml(firstName(p.name))}</td>
       <td class="cell-num">${fmtMinutes(stat.secondsPlayed)}</td>
       <td class="cell-num">${stat.breaksTaken || 0}</td>
       <td class="cell-state">${stateLabel}</td>

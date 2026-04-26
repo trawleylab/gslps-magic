@@ -4,7 +4,7 @@
 // fall back to network. To force an update, bump CACHE_VERSION below; on the
 // next page load the new SW will install and clean up the old caches.
 
-const CACHE_VERSION = 'gslps-magic-v6';
+const CACHE_VERSION = 'gslps-magic-v7';
 const CACHE_FILES = [
   './',
   './index.html',

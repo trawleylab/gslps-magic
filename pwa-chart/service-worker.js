@@ -2,7 +2,7 @@
 // Precache all assets on install, serve cache-first. Bump CACHE_VERSION
 // to ship an update.
 
-const CACHE_VERSION = 'gslps-magic-chart-v2';
+const CACHE_VERSION = 'gslps-magic-chart-v4';
 const CACHE_FILES = [
   './',
   './index.html',
