@@ -283,6 +283,30 @@ main { flex: 1; min-height: 0; overflow: hidden; }
   padding: 0.4rem; border-bottom: 1px solid var(--border); text-align: left;
 }
 .roster-edit th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
-.roster-edit tr.inactive td:not(.cell-active) { opacity: 0.4; }
+.roster-edit tr.inactive td:not(.cell-active):not(.cell-order) { opacity: 0.4; }
 .roster-edit .cell-active { text-align: center; }
 .roster-edit .cell-active input { width: 22px; height: 22px; cursor: pointer; }
+
+/* Bold separator under the 5th active player — visually marks the line
+   between "starting 5" and "bench rotation order". */
+.roster-edit tr.last-starter td {
+  border-bottom: 3px solid var(--primary);
+}
+
+.roster-edit .cell-order {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.3rem 0.4rem;
+}
+.btn-arrow {
+  min-width: 44px; min-height: 44px;
+  font-size: 1.2rem;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.btn-arrow:active { transform: scale(0.94); }
+.btn-arrow:disabled { opacity: 0.25; cursor: not-allowed; }

@@ -238,6 +238,19 @@ function removePlayer(id) {
   persist(); render();
 }
 
+// Reorder a player up or down in the roster. The roster order IS the rotation
+// order — the top 5 active players are the starting 5, and positions 6+
+// determine who comes on first at the next block.
+function movePlayer(id, direction) {
+  const i = gameState.roster.findIndex(p => p.id === id);
+  if (i < 0) return;
+  const j = direction === 'up' ? i - 1 : i + 1;
+  if (j < 0 || j >= gameState.roster.length) return;
+  const r = gameState.roster;
+  [r[i], r[j]] = [r[j], r[i]];
+  persist(); render();
+}
+
 function setHalves(v) {
   if (v < 1 || v > 4) return;
   gameState.halves = v;
@@ -407,27 +420,52 @@ function renderSettings() {
     </section>
 
     <section class="settings-section">
-      <h3>Roster</h3>
+      <h3>Roster &amp; lineup order</h3>
+      <p class="settings-hint">
+        The roster order IS the lineup order. The top 5 <em>active</em> players are
+        the starting 5; the rest come on in order at each block. Use the
+        ↑ ↓ buttons to change who starts.
+      </p>
       <table class="roster-edit">
         <thead><tr>
-          <th>Playing<br>today</th><th>#</th><th>Name</th><th></th>
+          <th>Order</th><th>Playing<br>today</th><th>#</th><th>Name</th><th></th>
         </tr></thead>
         <tbody>
-          ${gameState.roster.map(p => `
-            <tr class="${p.active === false ? 'inactive' : ''}">
-              <td class="cell-active"><input type="checkbox" ${p.active !== false ? 'checked' : ''}
-                         data-action="toggle-active" data-id="${p.id}"></td>
-              <td><input type="number" value="${p.number}"
-                         data-action="edit-number" data-id="${p.id}" class="num-input"></td>
-              <td><input type="text" value="${escapeHtml(p.name)}"
-                         data-action="edit-name" data-id="${p.id}" class="text-input"></td>
-              <td><button class="btn btn-ghost btn-small"
-                          data-action="remove-player" data-id="${p.id}">remove</button></td>
-            </tr>`).join('')}
+          ${(() => {
+            // Mark the dividing line: which row is the LAST starter (5th active).
+            // Anything above is starting 5; anything below is bench rotation.
+            let activeSeen = 0, lastStarterIdx = -1;
+            for (let i = 0; i < gameState.roster.length; i++) {
+              if (gameState.roster[i].active !== false) {
+                activeSeen++;
+                if (activeSeen === 5) { lastStarterIdx = i; break; }
+              }
+            }
+            return gameState.roster.map((p, i) => {
+              const cls = (p.active === false ? 'inactive ' : '') +
+                          (i === lastStarterIdx ? 'last-starter' : '');
+              return `
+                <tr class="${cls.trim()}">
+                  <td class="cell-order">
+                    <button class="btn-arrow" data-action="move-up" data-id="${p.id}"
+                            ${i === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
+                    <button class="btn-arrow" data-action="move-down" data-id="${p.id}"
+                            ${i === gameState.roster.length - 1 ? 'disabled' : ''} aria-label="Move down">↓</button>
+                  </td>
+                  <td class="cell-active"><input type="checkbox" ${p.active !== false ? 'checked' : ''}
+                             data-action="toggle-active" data-id="${p.id}"></td>
+                  <td><input type="number" value="${p.number}"
+                             data-action="edit-number" data-id="${p.id}" class="num-input"></td>
+                  <td><input type="text" value="${escapeHtml(p.name)}"
+                             data-action="edit-name" data-id="${p.id}" class="text-input"></td>
+                  <td><button class="btn btn-ghost btn-small"
+                              data-action="remove-player" data-id="${p.id}">remove</button></td>
+                </tr>`;
+            }).join('');
+          })()}
         </tbody>
       </table>
       <button class="btn" data-action="add-player">+ Add player</button>
-      <p class="settings-hint">Untick "Playing today" to sit a player out without removing them. The schedule re-generates with the remaining active players.</p>
     </section>
 
     <section class="settings-section">
@@ -453,6 +491,8 @@ document.addEventListener('click', (e) => {
     case 'view-settings': setView('settings'); break;
     case 'add-player':   addPlayer(); break;
     case 'remove-player': removePlayer(id); break;
+    case 'move-up':      movePlayer(id, 'up'); break;
+    case 'move-down':    movePlayer(id, 'down'); break;
     case 'new-game':     startNewGame(); break;
   }
 });
