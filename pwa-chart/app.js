@@ -105,16 +105,19 @@ function activeRoster() { return gameState.roster.filter(p => p.active !== false
 
 // -- 4. SCHEDULE GENERATOR ----------------------------------------------------
 //
-// Queue right-rotation by bench-size each block produces an even rotation
-// that mirrors the standard "pairs come on/off" junior basketball pattern.
+// Greedy fair rotation. Block 1 is always "starting 5 = top of roster" so the
+// coach's lineup order picks who tips off. For every block after that, the
+// next bench is chosen by:
 //
-//   7 active → bench 2 → swap 2 every block
-//   8 active → bench 3 → swap 3 every block
-//   6 active → bench 1 → swap 1 every block
-//   5 active → bench 0 → no rotation
+//   1. lowest cumulative bench count   (kids who owe bench time sit first)
+//   2. earliest last bench             (a kid playing a long streak gets a rest)
+//   3. roster order                    (stable, deterministic tiebreak)
 //
-// Continuous rotation across both halves spreads minutes as evenly as the
-// math allows (perfectly even when blocks % active == 0, e.g. 8 blocks ÷ 8).
+// This keeps the per-half AND per-game bench spread to the minimum the math
+// allows (≤ 1 block), and — unlike a pure right-rotation — distributes the
+// "extra bench" slot across the roster instead of always landing on the same
+// kids at the bottom of the lineup whenever the active count doesn't divide
+// the schedule evenly (8 blocks ÷ 7 active, etc.).
 
 function generateSchedule() {
   const active = activeRoster();
@@ -124,26 +127,80 @@ function generateSchedule() {
   if (N < 5) return { blocks: [], blockMin, error: `Need at least 5 active players (have ${N}).` };
 
   const benchSize = N - 5;
-  let queue = active.slice();
   const blocks = [];
+
+  const benchCount = new Map(active.map(p => [p.id, 0]));
+  const lastBench  = new Map(active.map(p => [p.id, -1]));
+  const rosterIdx  = new Map(active.map((p, i) => [p.id, i]));
+
   for (let i = 0; i < totalBlocks; i++) {
+    let courtSet, benchSet;
+    if (i === 0) {
+      courtSet = active.slice(0, 5);
+      benchSet = active.slice(5);
+    } else if (benchSize === 0) {
+      courtSet = active.slice();
+      benchSet = [];
+    } else {
+      const sorted = active.slice().sort((a, b) => {
+        const ba = benchCount.get(a.id), bb = benchCount.get(b.id);
+        if (ba !== bb) return ba - bb;
+        const la = lastBench.get(a.id), lb = lastBench.get(b.id);
+        if (la !== lb) return la - lb;
+        return rosterIdx.get(a.id) - rosterIdx.get(b.id);
+      });
+      benchSet = sorted.slice(0, benchSize);
+      courtSet = sorted.slice(benchSize);
+    }
+
+    // Display in roster order so the chart is easy to scan top-to-bottom.
+    const byRoster = (a, b) => rosterIdx.get(a.id) - rosterIdx.get(b.id);
+    const court = courtSet.slice().sort(byRoster);
+    const bench = benchSet.slice().sort(byRoster);
+
     const half = Math.floor(i / gameState.blocksPerHalf) + 1;
     const inHalf = i % gameState.blocksPerHalf;
     const startMin = gameState.halfMinutes - inHalf * blockMin;
     const endMin   = startMin - blockMin;
-    blocks.push({
-      idx: i, half, inHalf,
-      startMin, endMin,
-      court: queue.slice(0, 5),
-      bench: queue.slice(5)
-    });
-    if (benchSize > 0) {
-      // Rotate right by bench-size: last `benchSize` players become the new
-      // court, the previous court shifts down toward the bench.
-      queue = queue.slice(-benchSize).concat(queue.slice(0, queue.length - benchSize));
+    blocks.push({ idx: i, half, inHalf, startMin, endMin, court, bench });
+
+    for (const p of benchSet) {
+      benchCount.set(p.id, benchCount.get(p.id) + 1);
+      lastBench.set(p.id, i);
     }
   }
   return { blocks, blockMin };
+}
+
+// Per-player totals across the whole game — used by the sidebar so the coach
+// can see at a glance whether anyone is short-changed.
+//
+// `benchSessions` counts contiguous runs of bench blocks (so a kid who sits
+// blocks 2, 3 in a row counts as one session of 10 min, not two of 5 min).
+// The greedy rotation almost never produces back-to-back benches but we
+// compute it properly so the count stays accurate if a coach edits the roster
+// mid-game.
+function computeTotals(sched) {
+  const totals = new Map();
+  for (const p of activeRoster()) {
+    totals.set(p.id, { courtBlocks: 0, benchBlocks: 0, benchSessions: 0 });
+  }
+  const wasBench = new Map();
+  for (const block of sched.blocks) {
+    const benchIds = new Set(block.bench.map(p => p.id));
+    for (const p of block.court) totals.get(p.id).courtBlocks++;
+    for (const p of block.bench) totals.get(p.id).benchBlocks++;
+    for (const p of activeRoster()) {
+      const isBench = benchIds.has(p.id);
+      if (isBench && !wasBench.get(p.id)) totals.get(p.id).benchSessions++;
+      wasBench.set(p.id, isBench);
+    }
+  }
+  for (const t of totals.values()) {
+    t.courtMin = t.courtBlocks * sched.blockMin;
+    t.benchMin = t.benchBlocks * sched.blockMin;
+  }
+  return totals;
 }
 
 function currentBlockIndex() {
@@ -310,7 +367,7 @@ function render() {
     renderNowPanel(sched);
     renderNextPanel(sched);
     renderSchedule(sched);
-    renderLegend();
+    renderLegend(sched);
   } else {
     $('#chart-view').hidden = true;
     $('#settings-view').hidden = false;
@@ -430,12 +487,41 @@ function renderSchedule(sched) {
   wrap.innerHTML = html;
 }
 
-function renderLegend() {
+function renderLegend(sched) {
   const wrap = $('#legend');
   const active = activeRoster();
-  wrap.innerHTML = active.map(p =>
-    `<span class="legend-item">${escapeHtml(firstName(p.name))}</span>`
-  ).join('');
+  if (!sched || sched.error || active.length === 0) {
+    wrap.innerHTML = active.map(p =>
+      `<span class="legend-item">${escapeHtml(firstName(p.name))}</span>`
+    ).join('');
+    return;
+  }
+  const totals = computeTotals(sched);
+  // Highlight the players sitting the most — coach can spot anyone short-changed
+  // when the bench can't divide evenly (e.g. 8 blocks ÷ 7 active).
+  const benchMins = Array.from(totals.values()).map(t => t.benchMin);
+  const maxBench = Math.max(...benchMins);
+  const minBench = Math.min(...benchMins);
+  const uneven   = maxBench > minBench;
+
+  const rows = active.map(p => {
+    const t = totals.get(p.id);
+    const isMax = uneven && t.benchMin === maxBench;
+    return `<tr class="${isMax ? 'most-bench' : ''}">
+      <td class="legend-name">${escapeHtml(firstName(p.name))}</td>
+      <td class="legend-mins mins-court">${Math.round(t.courtMin)}m</td>
+      <td class="legend-mins mins-bench">${Math.round(t.benchMin)}m</td>
+      <td class="legend-mins mins-subs">${t.benchSessions}×</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="legend-table">
+      <thead><tr><th>Player</th><th>Court</th><th>Bench</th><th>Subs</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` + (uneven
+      ? `<div class="legend-note">Bench spread ${Math.round(minBench)}–${Math.round(maxBench)} min (math limit for ${active.length} active).</div>`
+      : `<div class="legend-note">Everyone benches ${Math.round(minBench)} min.</div>`);
 }
 
 function renderSettings() {

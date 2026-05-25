@@ -333,6 +333,19 @@ main {
 }
 .minutes-table .cell-num  { text-align: right; }
 .minutes-table .cell-name { font-weight: 600; }
+.minutes-table .cell-court { color: var(--on-court); }
+.minutes-table .cell-bench { color: var(--muted); }
+
+.minutes-spread {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.minutes-spread.warn {
+  color: var(--warning);
+  font-weight: 600;
+}
 
 .status-dot {
   display: inline-block;

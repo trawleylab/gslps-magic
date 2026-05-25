@@ -272,7 +272,7 @@ main { flex: 1; min-height: 0; overflow: hidden; }
 .legend-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.3rem;
 }
 .legend-item {
   display: flex;
@@ -281,6 +281,41 @@ main { flex: 1; min-height: 0; overflow: hidden; }
   font-size: 0.95rem;
   padding: 0.3rem 0.4rem;
   border-radius: 6px;
+}
+.legend-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.legend-table th {
+  text-align: right;
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding: 0.3rem 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.legend-table th:first-child { text-align: left; }
+.legend-table td {
+  padding: 0.4rem 0.35rem;
+  border-bottom: 1px solid #1f2731;
+  font-variant-numeric: tabular-nums;
+}
+.legend-name { font-weight: 600; }
+.legend-mins { text-align: right; font-size: 0.85rem; }
+.mins-court { color: var(--on-court); }
+.mins-bench { color: var(--muted); }
+.mins-subs  { color: var(--muted); }
+/* Players holding the math-forced "extra bench" slot — coach can spot them. */
+.legend-table tr.most-bench td { background: #3a2a1a; }
+.legend-table tr.most-bench .mins-bench { color: var(--warning); font-weight: 700; }
+.legend-note {
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 /* ---------- Settings ---------- */

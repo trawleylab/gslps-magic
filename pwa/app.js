@@ -62,8 +62,15 @@ function createDefaultGameState(roster) {
     roster: seed,
     onCourtIds: active.slice(0, 5).map(p => p.id),
     benchIds:   active.slice(5).map(p => p.id),
+    // benchSessions counts distinct bench periods. Initial bench players
+    // start at 1 (they're already in session 1 from tip-off); starters are 0.
     playerStats: Object.fromEntries(
-      seed.map(p => [p.id, { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 }])
+      seed.map((p, i) => [p.id, {
+        secondsPlayed: 0,
+        secondsSinceChange: 0,
+        breaksTaken: 0,
+        benchSessions: (i >= 5 && p.active !== false) ? 1 : 0
+      }])
     ),
     rules: structuredClone(DEFAULT_RULES),
     subIntervalMinutes: DEFAULT_SUB_INTERVAL_MIN,
@@ -401,9 +408,11 @@ function commitSubs() {
     gameState.playerStats[id].secondsSinceChange = 0;
   }
   // A "break" = a sub OFF the court. Used to keep rotations fair so the same
-  // player isn't always picked first to come off.
+  // player isn't always picked first to come off. Each sub-off also starts a
+  // new bench session.
   for (const id of courtSel) {
-    gameState.playerStats[id].breaksTaken = (gameState.playerStats[id].breaksTaken || 0) + 1;
+    gameState.playerStats[id].breaksTaken  = (gameState.playerStats[id].breaksTaken  || 0) + 1;
+    gameState.playerStats[id].benchSessions = (gameState.playerStats[id].benchSessions || 0) + 1;
   }
   gameState.lastSubGameSec = totalElapsedSeconds();
 
@@ -446,7 +455,7 @@ function addPlayer() {
   const newId = 'p' + Date.now().toString(36);
   gameState.roster.push({ id: newId, name: 'New Player', number: nextNumber, active: true });
   gameState.benchIds.push(newId);
-  gameState.playerStats[newId] = { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 };
+  gameState.playerStats[newId] = { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0, benchSessions: 1 };
   persist();
   render();
 }
@@ -494,6 +503,9 @@ function setPlayerActive(id, active) {
   } else {
     if (!gameState.onCourtIds.includes(id) && !gameState.benchIds.includes(id)) {
       gameState.benchIds.push(id);
+      // Re-joining as a bench player starts a fresh bench session.
+      const s = gameState.playerStats[id];
+      if (s) s.benchSessions = (s.benchSessions || 0) + 1;
     }
   }
   persist();
@@ -779,14 +791,20 @@ function renderActionBar() {
 function renderSidebar() {
   const tbody = $('#minutes-tbody');
   tbody.innerHTML = '';
-  // Active players only — inactive ones aren't rotating today.
-  // Sort: most-played first so the rotation imbalance is glanceable.
+  // Bench seconds is wall-clock time elapsed minus court time. We track court
+  // time directly (secondsPlayed) so this is just the complement.
+  const elapsed = totalElapsedSeconds();
   const rows = activeRoster()
-    .map(p => ({ p, stat: gameState.playerStats[p.id] || { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 } }))
-    .sort((a, b) => b.stat.secondsPlayed - a.stat.secondsPlayed);
+    .map(p => {
+      const stat = gameState.playerStats[p.id] || { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 };
+      const benchSec = Math.max(0, elapsed - stat.secondsPlayed);
+      return { p, stat, benchSec };
+    })
+    // Sort: most-benched first so any kid being short-changed is at the top.
+    .sort((a, b) => b.benchSec - a.benchSec);
 
   const limitMin = gameState.rules.consecutiveMinutes.limitMinutes;
-  for (const { p, stat } of rows) {
+  for (const { p, stat, benchSec } of rows) {
     const onCourt = gameState.onCourtIds.includes(p.id);
     const consMin = stat.secondsSinceChange / 60;
     let dotClass = onCourt ? 'on' : 'off';
@@ -798,11 +816,29 @@ function renderSidebar() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="cell-name"><span class="status-dot ${dotClass}"></span>${escapeHtml(firstName(p.name))}</td>
-      <td class="cell-num">${fmtMinutes(stat.secondsPlayed)}</td>
-      <td class="cell-num">${stat.breaksTaken || 0}</td>
+      <td class="cell-num cell-court">${fmtMinutes(stat.secondsPlayed)}</td>
+      <td class="cell-num cell-bench">${fmtMinutes(benchSec)}</td>
+      <td class="cell-num">${stat.benchSessions || 0}</td>
       <td class="cell-state">${stateLabel}</td>
     `;
     tbody.appendChild(tr);
+  }
+
+  // Surface the team-wide bench spread so the coach can catch imbalance early
+  // (and not just at game end). Only meaningful once the clock has actually run.
+  const spreadEl = $('#minutes-spread');
+  if (elapsed < 60 || rows.length === 0) {
+    spreadEl.textContent = '';
+    spreadEl.className = 'minutes-spread';
+  } else {
+    const benchMins = rows.map(r => r.benchSec / 60);
+    const lo = Math.floor(Math.min(...benchMins));
+    const hi = Math.ceil(Math.max(...benchMins));
+    const tol = gameState.rules.minutesSpread.toleranceMinutes || 4;
+    spreadEl.textContent = lo === hi
+      ? `Everyone benched ${lo} min so far.`
+      : `Bench so far: ${lo}–${hi} min.`;
+    spreadEl.className = 'minutes-spread' + ((hi - lo) > tol ? ' warn' : '');
   }
 }
 
@@ -975,10 +1011,19 @@ async function init() {
     for (const p of gameState.roster) {
       if (p.active === undefined) p.active = true;
       if (!gameState.playerStats[p.id]) {
-        gameState.playerStats[p.id] = { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0 };
+        gameState.playerStats[p.id] = { secondsPlayed: 0, secondsSinceChange: 0, breaksTaken: 0, benchSessions: 0 };
       }
       if (gameState.playerStats[p.id].breaksTaken == null) {
         gameState.playerStats[p.id].breaksTaken = 0;
+      }
+      if (gameState.playerStats[p.id].benchSessions == null) {
+        // Best-effort backfill for saves written before benchSessions existed:
+        // breaksTaken is one-to-one with bench periods that started from a
+        // sub-off, and we add +1 if the player is currently sitting (treating
+        // the ongoing rest as one more session).
+        const onBench = (gameState.benchIds || []).includes(p.id);
+        gameState.playerStats[p.id].benchSessions =
+          gameState.playerStats[p.id].breaksTaken + (onBench ? 1 : 0);
       }
     }
     if (!gameState.format) gameState.format = { ...DEFAULT_FORMAT };
