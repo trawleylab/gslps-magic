@@ -4,14 +4,38 @@
     {
       "name": "pwa",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "pwa"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--directory",
+        "pwa"
+      ],
       "port": 8765
     },
     {
       "name": "pwa-chart",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "pwa-chart"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8766",
+        "--directory",
+        "pwa-chart"
+      ],
       "port": 8766
+    },
+    {
+      "name": "pwa-maths",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8767",
+        "--directory",
+        "pwa-maths"
+      ],
+      "port": 8767
     }
   ]
 }

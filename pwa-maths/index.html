@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Times Table Blast!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#4338ca">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TT Blast">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ============ HOME / SET PICKER ============ -->
+  <section id="home-screen" class="screen">
+    <button type="button" class="sound-btn" data-action="toggle-sound" aria-label="Toggle sound">🔊</button>
+    <h1 class="title"><span class="title-emoji">🚀</span> Times Table Blast!</h1>
+    <p class="tagline">2 minutes on the clock — how many can you get right?</p>
+    <div id="set-grid"></div>
+    <button type="button" class="board-btn" data-action="show-board">🏆 Leaderboard</button>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="game-screen" class="screen" hidden>
+    <header class="game-top">
+      <button type="button" class="quit-btn" data-action="quit" aria-label="Quit game">✕</button>
+      <div id="timer" class="timer">2:00</div>
+      <div class="pills">
+        <div id="streak-pill" class="pill streak-pill" hidden>🔥 0</div>
+        <div id="score-pill" class="pill score-pill">⭐ 0</div>
+      </div>
+    </header>
+    <div class="timer-bar"><div id="timer-fill"></div></div>
+
+    <div id="question-card" class="question-card">
+      <div class="question-line">
+        <span id="question-text">&nbsp;</span>
+        <span class="entry-box"><span id="entry"></span><span class="caret"></span></span>
+      </div>
+      <div id="feedback" class="feedback">&nbsp;</div>
+    </div>
+
+    <div id="numpad">
+      <button type="button" class="key" data-key="1">1</button>
+      <button type="button" class="key" data-key="2">2</button>
+      <button type="button" class="key" data-key="3">3</button>
+      <button type="button" class="key" data-key="4">4</button>
+      <button type="button" class="key" data-key="5">5</button>
+      <button type="button" class="key" data-key="6">6</button>
+      <button type="button" class="key" data-key="7">7</button>
+      <button type="button" class="key" data-key="8">8</button>
+      <button type="button" class="key" data-key="9">9</button>
+      <button type="button" class="key key-back" data-key="back">⌫</button>
+      <button type="button" class="key" data-key="0">0</button>
+      <button type="button" class="key key-go" data-key="go">GO!</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="results-screen" class="screen" hidden>
+    <div class="results-scroll">
+      <div id="results-body"></div>
+      <div class="results-actions">
+        <button type="button" class="big-btn play-again" data-action="play-again">▶ Play Again</button>
+        <button type="button" class="big-btn pick-set" data-action="pick-set">Choose a Set</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LEADERBOARD ============ -->
+  <section id="board-screen" class="screen" hidden>
+    <div class="results-scroll">
+      <h1 class="board-title">🏆 Leaderboard</h1>
+      <div id="board-list"></div>
+      <div class="results-actions">
+        <button type="button" class="big-btn pick-set" data-action="board-home">⬅ Back</button>
+      </div>
+      <button type="button" class="clear-board" data-action="clear-board">Clear all scores</button>
+    </div>
+  </section>
+
+  <!-- countdown / time's-up overlay -->
+  <div id="overlay" hidden><div id="overlay-text"></div></div>
+
+  <canvas id="confetti"></canvas>
+
+  <script src="app.js"></script>
+</body>
+</html>
