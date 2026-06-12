@@ -17,10 +17,10 @@ A fun, offline-capable PWA for practising multiplication tables — built for a 
    - **Set D** — 7× and 8× tables
    - **Set E** — 9× and 10× tables
    - **Set F** — 11× and 12× tables
-3. A 3-2-1-GO countdown starts the round: **50 questions, 2 minutes**.
+3. A 3-2-1-GO countdown starts the round: **50 questions, 3 minutes**.
    Random questions from the set's two tables appear (shown either way
    round, e.g. `4 × 6` or `6 × 4`). The round ends the moment the 50th
-   question is answered, or when the 2 minutes run out — whichever comes
+   question is answered, or when the 3 minutes run out — whichever comes
    first. A progress pill shows how far through the 50 they are.
 4. Type the answer on the big on-screen number pad and hit **GO!** (or Enter
    on a keyboard). Correct answers get instant praise and a streak counter;

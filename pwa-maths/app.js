@@ -1,10 +1,10 @@
 'use strict';
 
 /* ===================== Times Table Blast! =====================
-   A 2-minute multiplication sprint. Pick a set (two times tables),
+   A 3-minute multiplication sprint. Pick a set (two times tables),
    answer as many as you can, get cheered on the whole way. */
 
-const GAME_SECONDS = 120;
+const GAME_SECONDS = 180;
 const QUESTION_TARGET = 50; // a round ends at 50 questions — 50/50 is the big prize
 const MAX_DIGITS = 3; // biggest answer is 12 x 12 = 144
 
@@ -133,7 +133,7 @@ function renderHome() {
   document.querySelector('#home-screen .title').innerHTML =
     `<span class="title-emoji">🚀</span> ${escapeHtml(playerName)}’s Times Table Blast!`;
   document.querySelector('#home-screen .tagline').textContent =
-    `Ready, ${who()}? You've got 2 minutes to blast through 50 questions!`;
+    `Ready, ${who()}? You've got 3 minutes to blast through 50 questions!`;
   document.querySelector('.change-player').textContent = `Not ${playerName}? Change player`;
   els.setGrid.innerHTML = '';
   for (const set of SETS) {
@@ -389,7 +389,7 @@ function showResults() {
   if (completed) {
     html += `<div class="results-sub">🏁 Finished all 50 with ${formatTime(game.timeLeftMs)} to spare!</div>`;
   } else if (attempted > 0) {
-    html += `<div class="results-sub">You got through ${attempted} questions in 2 minutes — race to 50 next time!</div>`;
+    html += `<div class="results-sub">You got through ${attempted} questions in 3 minutes — race to 50 next time!</div>`;
   }
   html += `<div class="stars">${starsHtml}</div>`;
   html += `<div class="results-message">${message}</div>`;

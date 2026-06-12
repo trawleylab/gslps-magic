@@ -1,7 +1,7 @@
 {
   "name": "Times Table Blast",
   "short_name": "TT Blast",
-  "description": "A fun 2-minute times-tables sprint for kids. Pick a set, beat the clock!",
+  "description": "A fun times-tables sprint for kids. Pick a set, race to 50 before the clock runs out!",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
