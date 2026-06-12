@@ -7,6 +7,14 @@
 const GAME_SECONDS = 120;
 const MAX_DIGITS = 3; // biggest answer is 12 x 12 = 144
 
+// Who's playing — used to personalise all the encouragement.
+// %N in any message becomes the name or the nickname (random pick).
+const PLAYER = { name: 'Henry', nick: 'Winkles' };
+
+function personalise(s) {
+  return s.replace('%N', Math.random() < 0.5 ? PLAYER.name : PLAYER.nick);
+}
+
 const SETS = [
   { id: 'A', tables: [1, 2],   emoji: '🐣', color: '#ef4444', dark: '#b91c1c' },
   { id: 'B', tables: [3, 4],   emoji: '🐰', color: '#f97316', dark: '#c2410c' },
@@ -17,11 +25,15 @@ const SETS = [
 ];
 
 const PRAISE = [
-  'Awesome! ✨', 'Brilliant! 🌟', 'You rock! 🎸', 'Super! 💫', 'Nailed it! 🎯',
-  'Boom! 💥', 'Maths magic! 🪄', 'Genius! 🧠', 'Yes! Keep going! 🚀', 'Speedy! ⚡',
+  'Awesome, %N! ✨', 'Brilliant, %N! 🌟', 'You rock, %N! 🎸', 'Super, %N! 💫',
+  'Nailed it! 🎯', 'Boom, %N! 💥', 'Maths magic, %N! 🪄', 'Genius! 🧠',
+  'Yes, %N! Keep going! 🚀', 'Speedy, %N! ⚡', 'Too good, %N! 😎', 'Wow! 🤩',
 ];
 
-const NEARLY = ['Good try!', 'So close!', 'Nearly!', 'Tricky one!', 'You’ll get the next one!'];
+const NEARLY = [
+  'Good try, %N!', 'So close, %N!', 'Nearly, %N!', 'Tricky one!',
+  'You’ll get the next one, %N!',
+];
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -81,6 +93,11 @@ function loadBest(setId) {
 }
 
 function renderHome() {
+  document.title = `${PLAYER.name}’s Times Table Blast!`;
+  document.querySelector('.title').innerHTML =
+    `<span class="title-emoji">🚀</span> ${escapeHtml(PLAYER.name)}’s Times Table Blast!`;
+  document.querySelector('.tagline').textContent =
+    `Ready, ${PLAYER.nick}? 2 minutes on the clock — how many can you get right?`;
   els.setGrid.innerHTML = '';
   for (const set of SETS) {
     const btn = document.createElement('button');
@@ -130,7 +147,7 @@ function startGame(set) {
   els.timerFill.style.width = '100%';
   els.timerFill.className = '';
   showScreen('game');
-  runCountdown(['3', '2', '1', 'GO! 🚀'], () => {
+  runCountdown(['3', '2', '1', `GO, ${PLAYER.name.toUpperCase()}! 🚀`], () => {
     game.locked = false;
     nextQuestion();
     game.endTime = Date.now() + GAME_SECONDS * 1000;
@@ -148,7 +165,7 @@ function runCountdown(steps, done) {
       done();
       return;
     }
-    els.overlayText.className = '';
+    els.overlayText.className = steps[i].length > 4 ? 'small' : '';
     els.overlayText.textContent = steps[i];
     // retrigger the pop animation
     void els.overlayText.offsetWidth;
@@ -177,7 +194,7 @@ function finishGame() {
   clearInterval(game.timerId);
   clearTimeout(game.feedbackId);
   els.overlayText.className = 'small';
-  els.overlayText.textContent = '⏰ TIME’S UP!';
+  els.overlayText.textContent = `⏰ TIME’S UP, ${PLAYER.nick.toUpperCase()}!`;
   els.overlay.hidden = false;
   playTimesUp();
   setTimeout(() => {
@@ -256,8 +273,8 @@ function submitAnswer() {
     els.card.classList.add('right');
     els.feedback.className = 'feedback good';
     els.feedback.textContent = (game.streak >= 5 && game.streak % 5 === 0)
-      ? `🔥 ${game.streak} IN A ROW! 🔥`
-      : PRAISE[Math.floor(Math.random() * PRAISE.length)];
+      ? personalise(`🔥 ${game.streak} IN A ROW, %N! 🔥`)
+      : personalise(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
     playCorrect();
     game.feedbackId = setTimeout(advance, 650);
   } else {
@@ -266,7 +283,7 @@ function submitAnswer() {
     els.card.classList.add('wrong');
     els.feedback.className = 'feedback bad';
     els.feedback.textContent =
-      `${NEARLY[Math.floor(Math.random() * NEARLY.length)]} ${a} × ${b} = ${ans}`;
+      `${personalise(NEARLY[Math.floor(Math.random() * NEARLY.length)])} ${a} × ${b} = ${ans}`;
     playWrong();
     game.feedbackId = setTimeout(advance, 2000);
   }
@@ -295,11 +312,12 @@ function showResults() {
   const starsHtml = '★'.repeat(stars) + `<span class="dim">${'★'.repeat(3 - stars)}</span>`;
 
   let message;
-  if (total === 0)      message = 'The clock beat you this time — jump back in! 😄';
-  else if (pct >= 90)   message = 'WOW! You’re a times-table superstar! 🌟';
-  else if (pct >= 70)   message = 'Amazing work! You really know your stuff! 💪';
-  else if (pct >= 40)   message = 'Great effort! You’re getting stronger every game! 🚀';
-  else                  message = 'Good practising! Every go makes your brain bigger! 🧠';
+  if (total === 0)      message = 'The clock beat you this time, %N — jump back in! 😄';
+  else if (pct >= 90)   message = 'WOW, %N! You’re a times-table superstar! 🌟';
+  else if (pct >= 70)   message = 'Amazing work, %N! You really know your stuff! 💪';
+  else if (pct >= 40)   message = 'Great effort, %N! You’re getting stronger every game! 🚀';
+  else                  message = 'Good practising, %N! Every go makes your brain bigger! 🧠';
+  message = personalise(message);
 
   const right = attempts.filter(x => x.correct);
   const wrong = attempts.filter(x => !x.correct);
@@ -312,7 +330,7 @@ function showResults() {
   html += `<div class="results-message">${message}</div>`;
 
   if (total > 0) {
-    const lastName = localStorage.getItem('ttblast-player') || '';
+    const lastName = localStorage.getItem('ttblast-player') || PLAYER.name;
     html += `<div class="chip-section save-card" id="save-card">` +
       `<h2>🏆 Add your score to the leaderboard!</h2>` +
       `<div class="save-row">` +

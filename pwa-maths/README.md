@@ -25,6 +25,18 @@ A fun, offline-capable PWA for practising multiplication tables — built for a 
    the home screen. Scores are stored on the device; there's a small
    "Clear all scores" link at the bottom of the board.
 
+## Personalisation
+
+The app is personalised via the `PLAYER` constant at the top of `app.js`:
+
+```js
+const PLAYER = { name: 'Henry', nick: 'Winkles' };
+```
+
+The title, tagline, countdown, praise, streaks and results messages all use
+the name or nickname (picked at random where `%N` appears in a message).
+Change those two values to re-personalise for someone else.
+
 ## Running it
 
 It's a static site — serve the folder over HTTP (service workers need
