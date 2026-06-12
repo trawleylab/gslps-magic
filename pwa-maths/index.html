@@ -18,13 +18,26 @@
 </head>
 <body>
 
+  <!-- ============ NAME ENTRY ============ -->
+  <section id="name-screen" class="screen" hidden>
+    <h1 class="title"><span class="title-emoji">🚀</span> Times Table Blast!</h1>
+    <p class="tagline">Who's playing today?</p>
+    <div class="name-entry">
+      <input id="name-input" maxlength="12" placeholder="Type your name" autocomplete="off">
+      <button type="button" class="big-btn play-again" data-action="start-app">Let's Go! 🚀</button>
+    </div>
+  </section>
+
   <!-- ============ HOME / SET PICKER ============ -->
-  <section id="home-screen" class="screen">
+  <section id="home-screen" class="screen" hidden>
     <button type="button" class="sound-btn" data-action="toggle-sound" aria-label="Toggle sound">🔊</button>
     <h1 class="title"><span class="title-emoji">🚀</span> Times Table Blast!</h1>
-    <p class="tagline">2 minutes on the clock — how many can you get right?</p>
+    <p class="tagline">2 minutes on the clock — can you get all 50?</p>
     <div id="set-grid"></div>
-    <button type="button" class="board-btn" data-action="show-board">🏆 Leaderboard</button>
+    <div class="home-foot">
+      <button type="button" class="board-btn" data-action="show-board">🏆 Leaderboard</button>
+      <button type="button" class="change-player" data-action="change-player">Change player</button>
+    </div>
   </section>
 
   <!-- ============ GAME ============ -->
@@ -34,6 +47,7 @@
       <div id="timer" class="timer">2:00</div>
       <div class="pills">
         <div id="streak-pill" class="pill streak-pill" hidden>🔥 0</div>
+        <div id="progress-pill" class="pill">0/50</div>
         <div id="score-pill" class="pill score-pill">⭐ 0</div>
       </div>
     </header>

@@ -5,14 +5,21 @@
    answer as many as you can, get cheered on the whole way. */
 
 const GAME_SECONDS = 120;
+const QUESTION_TARGET = 50; // a round ends at 50 questions — 50/50 is the big prize
 const MAX_DIGITS = 3; // biggest answer is 12 x 12 = 144
 
-// Who's playing — used to personalise all the encouragement.
-// %N in any message becomes the name or the nickname (random pick).
-const PLAYER = { name: 'Henry', nick: 'Winkles' };
+// Who's playing — asked for on the name screen and used to personalise all
+// the encouragement. %N in any message becomes the player's name; if the
+// player is Henry, his nickname "Winkles" gets mixed in at random too.
+let playerName = (localStorage.getItem('ttblast-player') || '').trim();
+
+function who() {
+  const isHenry = playerName.toLowerCase() === 'henry';
+  return (isHenry && Math.random() < 0.5) ? 'Winkles' : playerName;
+}
 
 function personalise(s) {
-  return s.replace('%N', Math.random() < 0.5 ? PLAYER.name : PLAYER.nick);
+  return s.replace('%N', who());
 }
 
 const SETS = [
@@ -38,11 +45,13 @@ const NEARLY = [
 const $ = (sel) => document.querySelector(sel);
 
 const els = {
+  name: $('#name-screen'),
   home: $('#home-screen'),
   game: $('#game-screen'),
   results: $('#results-screen'),
   board: $('#board-screen'),
   boardList: $('#board-list'),
+  progressPill: $('#progress-pill'),
   setGrid: $('#set-grid'),
   timer: $('#timer'),
   timerFill: $('#timer-fill'),
@@ -72,10 +81,37 @@ function formatTime(ms) {
 /* ===================== screens ===================== */
 
 function showScreen(name) {
+  els.name.hidden = name !== 'name';
   els.home.hidden = name !== 'home';
   els.game.hidden = name !== 'game';
   els.results.hidden = name !== 'results';
   els.board.hidden = name !== 'board';
+}
+
+/* ===================== name screen ===================== */
+
+function showNameScreen() {
+  const input = document.getElementById('name-input');
+  input.value = playerName;
+  showScreen('name');
+  setTimeout(() => input.focus(), 100);
+}
+
+function startApp() {
+  const input = document.getElementById('name-input');
+  let name = input.value.trim().slice(0, 12);
+  if (!name) {
+    input.classList.remove('nudge');
+    void input.offsetWidth;
+    input.classList.add('nudge');
+    input.focus();
+    return;
+  }
+  name = name.charAt(0).toUpperCase() + name.slice(1);
+  playerName = name;
+  localStorage.setItem('ttblast-player', name);
+  input.blur();
+  renderHome();
 }
 
 function escapeHtml(s) {
@@ -93,11 +129,12 @@ function loadBest(setId) {
 }
 
 function renderHome() {
-  document.title = `${PLAYER.name}’s Times Table Blast!`;
-  document.querySelector('.title').innerHTML =
-    `<span class="title-emoji">🚀</span> ${escapeHtml(PLAYER.name)}’s Times Table Blast!`;
-  document.querySelector('.tagline').textContent =
-    `Ready, ${PLAYER.nick}? 2 minutes on the clock — how many can you get right?`;
+  document.title = `${playerName}’s Times Table Blast!`;
+  document.querySelector('#home-screen .title').innerHTML =
+    `<span class="title-emoji">🚀</span> ${escapeHtml(playerName)}’s Times Table Blast!`;
+  document.querySelector('#home-screen .tagline').textContent =
+    `Ready, ${who()}? You've got 2 minutes to blast through 50 questions!`;
+  document.querySelector('.change-player').textContent = `Not ${playerName}? Change player`;
   els.setGrid.innerHTML = '';
   for (const set of SETS) {
     const btn = document.createElement('button');
@@ -110,7 +147,7 @@ function renderHome() {
       `<span class="set-emoji">${set.emoji}</span>` +
       `<span class="set-name">Set ${set.id}</span>` +
       `<span class="set-tables">${set.tables[0]}× and ${set.tables[1]}× tables</span>` +
-      `<span class="set-best">${best ? `🏆 Best: ${best.score}` : 'Not played yet'}</span>`;
+      `<span class="set-best">${best ? `🏆 Best: ${best.score}/${QUESTION_TARGET}` : 'Not played yet'}</span>`;
     btn.addEventListener('click', () => startGame(set));
     els.setGrid.appendChild(btn);
   }
@@ -131,11 +168,14 @@ function startGame(set) {
     streak: 0,
     locked: true,
     over: false,
+    completed: false,
+    timeLeftMs: 0,
     endTime: 0,
     timerId: null,
     feedbackId: null,
   };
   els.scorePill.textContent = '⭐ 0';
+  els.progressPill.textContent = `0/${QUESTION_TARGET}`;
   els.streakPill.hidden = true;
   els.feedback.textContent = ' ';
   els.feedback.className = 'feedback';
@@ -147,7 +187,7 @@ function startGame(set) {
   els.timerFill.style.width = '100%';
   els.timerFill.className = '';
   showScreen('game');
-  runCountdown(['3', '2', '1', `GO, ${PLAYER.name.toUpperCase()}! 🚀`], () => {
+  runCountdown(['3', '2', '1', `GO, ${playerName.toUpperCase()}! 🚀`], () => {
     game.locked = false;
     nextQuestion();
     game.endTime = Date.now() + GAME_SECONDS * 1000;
@@ -184,23 +224,31 @@ function tick() {
   els.timerFill.style.width = (frac * 100) + '%';
   els.timerFill.className = remaining <= 10000 ? 'critical' : remaining <= 30000 ? 'low' : '';
   els.timer.classList.toggle('critical', remaining <= 10000);
-  if (remaining <= 0) finishGame();
+  if (remaining <= 0) finishGame(false);
 }
 
-function finishGame() {
+function finishGame(completed) {
   if (!game || game.over) return;
   game.over = true;
   game.locked = true;
+  game.completed = completed;
   clearInterval(game.timerId);
   clearTimeout(game.feedbackId);
+  const perfect = completed && game.score === QUESTION_TARGET;
   els.overlayText.className = 'small';
-  els.overlayText.textContent = `⏰ TIME’S UP, ${PLAYER.nick.toUpperCase()}!`;
+  els.overlayText.textContent = perfect
+    ? `🌟 PERFECT 50, ${who().toUpperCase()}! 🌟`
+    : completed
+      ? `🏁 ALL 50 DONE, ${who().toUpperCase()}!`
+      : `⏰ TIME’S UP, ${who().toUpperCase()}!`;
   els.overlay.hidden = false;
-  playTimesUp();
+  if (perfect) playMegaFanfare();
+  else if (completed) playFanfare();
+  else playTimesUp();
   setTimeout(() => {
     els.overlay.hidden = true;
     showResults();
-  }, 1400);
+  }, perfect ? 1900 : 1400);
 }
 
 function quitGame() {
@@ -261,6 +309,15 @@ function submitAnswer() {
   const correct = given === ans;
   game.attempts.push({ a, b, ans, given, correct });
   game.locked = true;
+  els.progressPill.textContent = `${game.attempts.length}/${QUESTION_TARGET}`;
+
+  // hit the 50-question target: freeze the clock now, finish after feedback
+  const hitTarget = game.attempts.length >= QUESTION_TARGET;
+  if (hitTarget) {
+    clearInterval(game.timerId);
+    game.timeLeftMs = Math.max(0, game.endTime - Date.now());
+  }
+  const after = hitTarget ? () => finishGame(true) : advance;
 
   if (correct) {
     game.score += 1;
@@ -276,7 +333,7 @@ function submitAnswer() {
       ? personalise(`🔥 ${game.streak} IN A ROW, %N! 🔥`)
       : personalise(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
     playCorrect();
-    game.feedbackId = setTimeout(advance, 650);
+    game.feedbackId = setTimeout(after, 650);
   } else {
     game.streak = 0;
     els.streakPill.hidden = true;
@@ -285,7 +342,7 @@ function submitAnswer() {
     els.feedback.textContent =
       `${personalise(NEARLY[Math.floor(Math.random() * NEARLY.length)])} ${a} × ${b} = ${ans}`;
     playWrong();
-    game.feedbackId = setTimeout(advance, 2000);
+    game.feedbackId = setTimeout(after, 2000);
   }
 }
 
@@ -298,44 +355,51 @@ function advance() {
 /* ===================== results ===================== */
 
 function showResults() {
-  const { attempts, score, set } = game;
-  const total = attempts.length;
-  const pct = total ? Math.round((score / total) * 100) : 0;
+  const { attempts, score, set, completed } = game;
+  const attempted = attempts.length;
+  const pct = Math.round((score / QUESTION_TARGET) * 100);
+  const perfect = score === QUESTION_TARGET;
 
   const prevBest = loadBest(set.id);
-  const newBest = total > 0 && score > (prevBest ? prevBest.score : 0);
+  const newBest = attempted > 0 && score > (prevBest ? prevBest.score : 0);
   if (newBest) {
-    localStorage.setItem(bestKey(set.id), JSON.stringify({ score, total, pct }));
+    localStorage.setItem(bestKey(set.id), JSON.stringify({ score, total: QUESTION_TARGET, pct }));
   }
 
-  const stars = total === 0 ? 0 : pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0;
+  const stars = perfect ? 3 : pct >= 80 ? 3 : pct >= 50 ? 2 : pct >= 20 ? 1 : 0;
   const starsHtml = '★'.repeat(stars) + `<span class="dim">${'★'.repeat(3 - stars)}</span>`;
 
   let message;
-  if (total === 0)      message = 'The clock beat you this time, %N — jump back in! 😄';
-  else if (pct >= 90)   message = 'WOW, %N! You’re a times-table superstar! 🌟';
-  else if (pct >= 70)   message = 'Amazing work, %N! You really know your stuff! 💪';
-  else if (pct >= 40)   message = 'Great effort, %N! You’re getting stronger every game! 🚀';
-  else                  message = 'Good practising, %N! Every go makes your brain bigger! 🧠';
+  if (perfect)            message = '🏆 PERFECT, %N! ALL 50 RIGHT — YOU HIT THE TARGET! 🏆';
+  else if (attempted === 0) message = 'The clock beat you this time, %N — jump back in! 😄';
+  else if (pct >= 80)     message = 'WOW, %N! You’re a times-table superstar! 🌟';
+  else if (pct >= 50)     message = 'Amazing work, %N! You really know your stuff! 💪';
+  else if (pct >= 20)     message = 'Great effort, %N! You’re getting stronger every game! 🚀';
+  else                    message = 'Good practising, %N! Every go makes your brain bigger! 🧠';
   message = personalise(message);
 
   const right = attempts.filter(x => x.correct);
   const wrong = attempts.filter(x => !x.correct);
 
   let html = '';
-  if (newBest) html += `<div class="new-best">🏆 NEW BEST SCORE! 🏆</div>`;
-  html += `<div class="big-pct">${total ? pct + '%' : '—'}</div>`;
-  html += `<div class="score-frac">${score} out of ${total} correct · Set ${set.id} (${set.tables[0]}× and ${set.tables[1]}×)</div>`;
+  if (perfect) html += `<div class="perfect-banner">🌟 PERFECT 50! 🌟</div>`;
+  if (newBest && !perfect) html += `<div class="new-best">🏆 NEW BEST SCORE! 🏆</div>`;
+  html += `<div class="big-pct${perfect ? ' perfect' : ''}">${score}/${QUESTION_TARGET}</div>`;
+  html += `<div class="score-frac">${score} out of ${QUESTION_TARGET} correct (${pct}%) · Set ${set.id} (${set.tables[0]}× and ${set.tables[1]}×)</div>`;
+  if (completed) {
+    html += `<div class="results-sub">🏁 Finished all 50 with ${formatTime(game.timeLeftMs)} to spare!</div>`;
+  } else if (attempted > 0) {
+    html += `<div class="results-sub">You got through ${attempted} questions in 2 minutes — race to 50 next time!</div>`;
+  }
   html += `<div class="stars">${starsHtml}</div>`;
   html += `<div class="results-message">${message}</div>`;
 
-  if (total > 0) {
-    const lastName = localStorage.getItem('ttblast-player') || PLAYER.name;
+  if (attempted > 0) {
+    const rank = autoSaveScore();
     html += `<div class="chip-section save-card" id="save-card">` +
-      `<h2>🏆 Add your score to the leaderboard!</h2>` +
+      `<h2>🎉 ${escapeHtml(playerName)}, you're #${rank} on the leaderboard!</h2>` +
       `<div class="save-row">` +
-      `<input id="player-name" maxlength="12" placeholder="Type your name" autocomplete="off" value="${escapeHtml(lastName)}">` +
-      `<button type="button" class="big-btn save-btn" data-action="save-score">Save</button>` +
+      `<button type="button" class="big-btn save-btn" data-action="show-board">See Leaderboard</button>` +
       `</div></div>`;
   }
 
@@ -354,10 +418,15 @@ function showResults() {
 
   els.resultsBody.innerHTML = html;
   showScreen('results');
-  document.querySelector('.results-scroll').scrollTop = 0;
+  document.querySelector('#results-screen .results-scroll').scrollTop = 0;
 
-  playFanfare();
-  if ((total > 0 && pct >= 70) || (newBest && score >= 3)) launchConfetti();
+  if (perfect) {
+    playMegaFanfare();
+    launchConfetti(380, 7000);
+  } else {
+    playFanfare();
+    if (pct >= 50 || (newBest && score >= 3)) launchConfetti();
+  }
 }
 
 /* ===================== leaderboard ===================== */
@@ -374,39 +443,23 @@ function sortBoard(board) {
   return board;
 }
 
-function saveScore() {
-  const input = document.getElementById('player-name');
-  if (!input || !game) return;
-  const name = input.value.trim().slice(0, 12);
-  if (!name) {
-    input.classList.remove('nudge');
-    void input.offsetWidth;
-    input.classList.add('nudge');
-    input.focus();
-    return;
-  }
-  localStorage.setItem('ttblast-player', name);
-
-  const total = game.attempts.length;
+// Adds the finished game to the leaderboard under the start-screen name.
+// Returns the entry's rank (1-based).
+function autoSaveScore() {
   const entry = {
     id: String(Date.now()) + '-' + Math.floor(Math.random() * 1e6),
-    name,
+    name: playerName,
     score: game.score,
-    total,
-    pct: total ? Math.round((game.score / total) * 100) : 0,
+    total: QUESTION_TARGET,
+    pct: Math.round((game.score / QUESTION_TARGET) * 100),
     set: game.set.id,
     when: Date.now(),
   };
-  const board = sortBoard([...loadBoard(), entry]).slice(0, 50);
-  localStorage.setItem('ttblast-board', JSON.stringify(board));
-  lastSavedId = entry.id;
-
+  const board = sortBoard([...loadBoard(), entry]);
   const rank = board.findIndex(e => e.id === entry.id) + 1;
-  const card = document.getElementById('save-card');
-  card.innerHTML =
-    `<h2>🎉 ${escapeHtml(name)}, you're #${rank} on the leaderboard!</h2>` +
-    `<div class="save-row"><button type="button" class="big-btn save-btn" data-action="show-board">See Leaderboard</button></div>`;
-  playFanfare();
+  localStorage.setItem('ttblast-board', JSON.stringify(board.slice(0, 50)));
+  lastSavedId = entry.id;
+  return rank;
 }
 
 function renderBoard() {
@@ -432,14 +485,14 @@ function renderBoard() {
 
 /* ===================== confetti ===================== */
 
-function launchConfetti() {
+function launchConfetti(count = 160, duration = 3200) {
   const canvas = els.confetti;
   const ctx = canvas.getContext('2d');
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   const colors = ['#fbbf24', '#34d399', '#60a5fa', '#f472b6', '#a78bfa', '#fff'];
   const pieces = [];
-  for (let i = 0; i < 160; i++) {
+  for (let i = 0; i < count; i++) {
     pieces.push({
       x: Math.random() * canvas.width,
       y: -20 - Math.random() * canvas.height * 0.5,
@@ -467,7 +520,7 @@ function launchConfetti() {
       ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
       ctx.restore();
     }
-    if (t < 3200) {
+    if (t < duration) {
       requestAnimationFrame(frame);
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -506,6 +559,12 @@ function playFanfare() {
   [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.22, 'triangle'));
 }
 
+function playMegaFanfare() {
+  // a longer, bigger victory tune for the perfect 50
+  [523, 659, 784, 1047, 784, 1047, 1319, 1047, 1319, 1568]
+    .forEach((f, i) => tone(f, i * 0.14, 0.26, 'triangle'));
+}
+
 function updateSoundButtons() {
   document.querySelectorAll('[data-action="toggle-sound"]').forEach(b => {
     b.textContent = soundOn ? '🔊' : '🔇';
@@ -524,8 +583,8 @@ document.addEventListener('keydown', (e) => {
     if (e.key >= '0' && e.key <= '9') handleKey(e.key);
     else if (e.key === 'Backspace') handleKey('back');
     else if (e.key === 'Enter') handleKey('go');
-  } else if (!els.results.hidden && e.key === 'Enter' && e.target.id === 'player-name') {
-    saveScore();
+  } else if (!els.name.hidden && e.key === 'Enter' && e.target.id === 'name-input') {
+    startApp();
   }
 });
 
@@ -537,7 +596,8 @@ document.addEventListener('click', (e) => {
   else if (action === 'pick-set') { game = null; renderHome(); }
   else if (action === 'show-board') renderBoard();
   else if (action === 'board-home') { game = null; renderHome(); }
-  else if (action === 'save-score') saveScore();
+  else if (action === 'start-app') startApp();
+  else if (action === 'change-player') showNameScreen();
   else if (action === 'clear-board') {
     if (confirm('Clear all leaderboard scores?')) {
       localStorage.removeItem('ttblast-board');
@@ -555,7 +615,8 @@ document.addEventListener('click', (e) => {
 
 /* ===================== boot ===================== */
 
-renderHome();
+if (playerName) renderHome();
+else showNameScreen();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

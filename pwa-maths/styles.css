@@ -107,6 +107,50 @@ button { font-family: inherit; cursor: pointer; border: none; }
   padding: 3px 12px;
 }
 
+/* ---- name entry screen ---- */
+
+.name-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 6px;
+}
+
+#name-input {
+  font-family: inherit;
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: bold;
+  text-align: center;
+  color: #1e1b4b;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 16px 20px;
+  width: min(76vw, 380px);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .2);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+#name-input:focus { outline: 5px solid #fbbf24; }
+#name-input.nudge { animation: shake .3s; }
+
+.home-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.change-player {
+  background: none;
+  color: rgba(255, 255, 255, .75);
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: bold;
+  text-decoration: underline;
+}
+
 .board-btn {
   margin-top: 20px;
   font-size: clamp(18px, 2.8vw, 26px);
@@ -348,6 +392,28 @@ button { font-family: inherit; cursor: pointer; border: none; }
   text-shadow: 0 5px 0 rgba(0, 0, 0, .25);
 }
 
+.big-pct.perfect { animation: rainbowPulse 1.6s linear infinite; }
+
+@keyframes rainbowPulse {
+  0%   { color: #fbbf24; transform: scale(1); }
+  20%  { color: #4ade80; }
+  40%  { color: #60a5fa; transform: scale(1.08); }
+  60%  { color: #f472b6; }
+  80%  { color: #a78bfa; transform: scale(1); }
+  100% { color: #fbbf24; }
+}
+
+.perfect-banner {
+  font-size: clamp(26px, 4.4vw, 44px);
+  font-weight: bold;
+  background: linear-gradient(90deg, #fbbf24, #f97316, #fbbf24);
+  color: #78350f;
+  border-radius: 999px;
+  padding: 10px 30px;
+  box-shadow: 0 5px 0 #b45309, 0 10px 20px rgba(0, 0, 0, .3);
+  animation: pulse 1s infinite;
+}
+
 .score-frac { font-size: clamp(20px, 3.4vw, 30px); opacity: .95; }
 
 .stars { font-size: clamp(38px, 7vw, 64px); letter-spacing: 6px; }
@@ -430,24 +496,6 @@ button { font-family: inherit; cursor: pointer; border: none; }
   align-items: stretch;
   flex-wrap: wrap;
 }
-
-#player-name {
-  font-family: inherit;
-  font-size: clamp(18px, 2.8vw, 26px);
-  font-weight: bold;
-  text-align: center;
-  color: #1e1b4b;
-  background: #fff;
-  border: none;
-  border-radius: 16px;
-  padding: 12px 16px;
-  width: min(60vw, 280px);
-  -webkit-user-select: text;
-  user-select: text;
-}
-
-#player-name:focus { outline: 4px solid #fbbf24; }
-#player-name.nudge { animation: shake .3s; }
 
 .save-btn { background: #f59e0b; box-shadow: 0 6px 0 #b45309; padding: 12px 26px; }
 
