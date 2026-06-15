@@ -36,6 +36,18 @@
         "pwa-maths"
       ],
       "port": 8767
+    },
+    {
+      "name": "pwa-stickflight",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8768",
+        "--directory",
+        "pwa-stickflight"
+      ],
+      "port": 8768
     }
   ]
 }
