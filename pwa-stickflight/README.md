@@ -9,8 +9,9 @@ internet needed after the first load.
 A chunky low-poly plane carrying **your stick figure** auto-flies across a
 low-poly city. You only **weave** — up, down, left, right — to dodge the
 oncoming military planes. Reach the giant chequered **finish arch** and you
-**WIN** and earn Stick Tokens 🪙. Get hit and the plane **explodes** and your
-stick figure **ragdolls** to the ground (crashing is half the fun).
+**WIN** and earn Stick Tokens 🪙. Get hit and your stick figure is thrown clear
+and **ragdolls** to the ground — hand-rolled physics, and the hat flies off
+(crashing is half the fun).
 
 A run is about 75 seconds, single life, fixed distance. The first few seconds
 are a safe "grace" zone with no enemies so you can learn the controls.

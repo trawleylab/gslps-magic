@@ -966,6 +966,12 @@
         rig.hatMesh.quaternion.setFromUnitVectors(UP, _v3);
       }
     }
+    // rounded joint spheres (neck/chest/hip/hands/feet) follow their points
+    if (rig.jointMeshes) {
+      for (const j of rig.jointMeshes) {
+        if (j.mesh && ragPoints[j.i]) j.mesh.position.copy(ragPoints[j.i].pos);
+      }
+    }
     // cape ribbon
     if (rig.capeMesh && capePoints.length) {
       applyCapeMesh();
@@ -1291,39 +1297,35 @@
     timeScale = 0;
     bulletEase = 0;
     bulletTimer = 0;
-    pendingExplode = true;  // do the boom one frame after hit-stop ends
+    pendingExplode = true;  // start the ragdoll one frame after hit-stop ends
     explodeTimer = 0;
-    // SFX/vibrate are app.js's job? Boom SFX is app.js (playBoom on crash).
-    if (navigator.vibrate) { try { navigator.vibrate([60, 40, 120]); } catch (e) {} }
+    // a light impact buzz (not an explosion)
+    if (navigator.vibrate) { try { navigator.vibrate(35); } catch (e) {} }
   }
 
+  // The plane does NOT explode — on impact the stick figure is thrown clear and
+  // ragdolls to the ground. No fireball, no debris, no orange flash: just a
+  // small camera bump and the tumble.
   function doBoom() {
     pendingExplode = false;
-    // 1. hide intact plane
+    // hide the plane + its trail (the figure carries on as a ragdoll)
     if (planeMesh) planeMesh.visible = false;
     hideTrail();
-    // 2. CSS hit-flash
-    if (flashEl) {
-      flashEl.classList.remove('is-flashing');
-      // force reflow to restart animation
-      void flashEl.offsetWidth;
-      flashEl.classList.add('is-flashing');
-      setTimeout(() => { if (flashEl) flashEl.classList.remove('is-flashing'); }, 220);
-    }
-    // 3. screen shake
-    shakeAmp = 0.9;
-    // 4. fireball — shared particle cloud
-    const p = planeRig.position;
-    emitParticles(PARTICLE_COUNT, p.x, p.y, p.z, 6, 22, PART_ORANGE);
-    // 5. debris
-    spawnDebris(p.x, p.y, p.z);
-    // 6. boom SFX handled by app.js via onCrash? No — crash cb fires after settle.
-    //    Engine doesn't own audio; app.js wires playBoom in its onCrash flow if desired.
-    // 7. camera pull-back begins
+    // clear the enemies so the frozen plane we hit doesn't block the view —
+    // the falling ragdoll should be the only thing on screen
+    hideAllEnemies();
+    // a gentle impact bump — enough to feel the hit, not an explosion
+    shakeAmp = 0.35;
+    // camera pulls back to frame the fall
     camPullBack = 1;
 
-    // launch ragdoll
-    _v1.set(0, 0, worldSpeed); // plane apparent velocity (world scrolls +Z)
+    // launch the ragdoll from the plane's position. A gentle toss INTO the
+    // scene (-z, toward the camera's look-at point) + the up-kick in
+    // startRagdoll keeps the figure in frame so you actually watch it tumble
+    // to the ground (the full plane speed in +z would rocket it past the
+    // camera and out of view).
+    const p = planeRig.position;
+    _v1.set(0, 0, -6);
     showFigure();
     startRagdoll(p, _v1);
     state = ST.RAGDOLL;
@@ -1372,7 +1374,9 @@
       if (pausedExternally) { lastNow = now; return; }
       let dt = (now - lastNow) / 1000;
       lastNow = now;
-      dt = Math.min(dt, 1 / 30);
+      // clamp to [0, 1/30]: never advance on a backwards clock (guards against
+      // distance/elapsed ever going negative), and cap big catch-up steps.
+      dt = Math.max(0, Math.min(dt, 1 / 30));
       stepFrame(dt);
       renderer.render(scene, camera);
     };
@@ -1761,6 +1765,11 @@
       }
     }
     if (heroRig.headMesh) heroRig.headMesh.position.copy(pts[0]);
+    if (heroRig.jointMeshes) {
+      for (const j of heroRig.jointMeshes) {
+        if (j.mesh && pts[j.i]) j.mesh.position.copy(pts[j.i]);
+      }
+    }
     if (heroRig.hatMesh) {
       heroRig.hatMesh.visible = true;
       heroRig.hatMesh.position.copy(pts[8]);

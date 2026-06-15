@@ -7,7 +7,7 @@
 // The vendored Three.js (vendor/three.min.js) MUST be precached — without it
 // the game cannot run offline.
 
-const CACHE_VERSION = 'stickflight-v2';
+const CACHE_VERSION = 'stickflight-v3';
 const CACHE_FILES = [
   './',
   './index.html',

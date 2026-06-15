@@ -122,19 +122,48 @@ const CONSTRAINTS = [
   [0, 8], // head-hat (severable)
 ];
 
+// Per-constraint cylinder radius (CONSTRAINTS order). The spine segments are
+// chunky so the figure reads as a body (something for the colour + cape to sit
+// on); arms/legs are thinner. The head-hat link is invisible.
+const LIMB_RADII = [
+  0.085, // head-neck (neck)
+  0.16,  // neck-chest (upper body)
+  0.21,  // chest-hip (torso)
+  0.082, // chest-Lhand (arm)
+  0.082, // chest-Rhand (arm)
+  0.10,  // hip-Lfoot (leg)
+  0.10,  // hip-Rfoot (leg)
+  0.05,  // head-hat (invisible connector)
+];
+
+// Rounded joint spheres so the figure looks like a chunky little person rather
+// than cut sticks. [pointIndex, radius] — built with the shared limb material
+// so they recolour with the body, and the engine repositions them every frame
+// at their point (so they follow the seated/idle/ragdoll poses). Head (0) and
+// hat (8) are their own meshes and are not listed here.
+const JOINTS = [
+  [1, 0.13],  // neck collar (blends head into body)
+  [2, 0.225], // chest / shoulders
+  [3, 0.185], // hip / pelvis
+  [4, 0.115], // left hand
+  [5, 0.115], // right hand
+  [6, 0.125], // left foot
+  [7, 0.125], // right foot
+];
+
 // Canonical standing-pose anchor positions (local figure space, y-up,
 // feet near y=0, total height ~1.8). Used to derive rest lengths and as
 // the basis the engine offsets from. Hat sits just above the head.
 const STAND = {
-  head:  { x: 0.00, y: 1.62, z: 0.00 },
-  neck:  { x: 0.00, y: 1.30, z: 0.00 },
-  chest: { x: 0.00, y: 1.05, z: 0.00 },
-  hip:   { x: 0.00, y: 0.72, z: 0.00 },
-  Lhand: { x: -0.42, y: 0.78, z: 0.00 },
-  Rhand: { x: 0.42, y: 0.78, z: 0.00 },
-  Lfoot: { x: -0.22, y: 0.02, z: 0.00 },
-  Rfoot: { x: 0.22, y: 0.02, z: 0.00 },
-  hat:   { x: 0.00, y: 1.98, z: 0.00 },
+  head:  { x: 0.00, y: 1.60, z: 0.00 },
+  neck:  { x: 0.00, y: 1.28, z: 0.00 },
+  chest: { x: 0.00, y: 1.04, z: 0.00 },
+  hip:   { x: 0.00, y: 0.70, z: 0.00 },
+  Lhand: { x: -0.38, y: 0.86, z: 0.00 },
+  Rhand: { x: 0.38, y: 0.86, z: 0.00 },
+  Lfoot: { x: -0.18, y: 0.02, z: 0.00 },
+  Rfoot: { x: 0.18, y: 0.02, z: 0.00 },
+  hat:   { x: 0.00, y: 1.90, z: 0.00 },
 };
 
 // Seated cockpit pose (knees up, hands forward gripping, slight lean) —
@@ -149,21 +178,21 @@ const SEATED = {
   Rhand: { x: 0.30, y: 0.82, z: 0.46 },
   Lfoot: { x: -0.24, y: 0.30, z: 0.40 },
   Rfoot: { x: 0.24, y: 0.30, z: 0.40 },
-  hat:   { x: 0.00, y: 1.76, z: 0.12 },
+  hat:   { x: 0.00, y: 1.70, z: 0.12 },
 };
 
 // Idle hero pose (relaxed standing, hands a touch out — for the rotating
 // shop/win preview).
 const IDLE = {
-  head:  { x: 0.00, y: 1.62, z: 0.00 },
-  neck:  { x: 0.00, y: 1.30, z: 0.00 },
-  chest: { x: 0.00, y: 1.05, z: 0.00 },
-  hip:   { x: 0.00, y: 0.72, z: 0.00 },
-  Lhand: { x: -0.46, y: 0.74, z: 0.04 },
-  Rhand: { x: 0.46, y: 0.74, z: 0.04 },
-  Lfoot: { x: -0.20, y: 0.02, z: 0.02 },
-  Rfoot: { x: 0.20, y: 0.02, z: -0.02 },
-  hat:   { x: 0.00, y: 1.98, z: 0.00 },
+  head:  { x: 0.00, y: 1.60, z: 0.00 },
+  neck:  { x: 0.00, y: 1.28, z: 0.00 },
+  chest: { x: 0.00, y: 1.04, z: 0.00 },
+  hip:   { x: 0.00, y: 0.70, z: 0.00 },
+  Lhand: { x: -0.40, y: 0.80, z: 0.04 },
+  Rhand: { x: 0.40, y: 0.80, z: 0.04 },
+  Lfoot: { x: -0.17, y: 0.02, z: 0.02 },
+  Rfoot: { x: 0.17, y: 0.02, z: -0.02 },
+  hat:   { x: 0.00, y: 1.90, z: 0.00 },
 };
 
 function _dist(a, b) {
@@ -361,8 +390,9 @@ function buildStickFigure(config, THREE) {
   // cylinder too for API symmetry but is hidden (the hat mesh covers it).
   const limbMeshes = CONSTRAINTS.map(([a, b], i) => {
     const isHatLink = a === 0 && b === 8;
+    const r = LIMB_RADII[i] != null ? LIMB_RADII[i] : 0.09;
     const m = new THREE.Mesh(
-      new THREE.CylinderGeometry(REST.LIMB_RADIUS, REST.LIMB_RADIUS, 1, 8, 1),
+      new THREE.CylinderGeometry(r, r, 1, 10, 1),
       limbMat
     );
     if (isHatLink) m.visible = false; // invisible connector to the hat anchor
@@ -370,6 +400,17 @@ function buildStickFigure(config, THREE) {
     _orientLimb(m, points[a].pos, points[b].pos, THREE);
     group.add(m);
     return m;
+  });
+
+  // Rounded joint spheres at neck/chest/hip/hands/feet so the figure reads as a
+  // chunky little person. Shared limb material → recolour for free; the engine
+  // repositions each at its point every frame (so they follow every pose).
+  const jointMeshes = JOINTS.map(([i, r]) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 9), limbMat);
+    const p = points[i].pos;
+    m.position.set(p.x, p.y, p.z);
+    group.add(m);
+    return { mesh: m, i };
   });
 
   // Hat mesh (parented under the group; engine positions it at the hat point).
@@ -388,7 +429,7 @@ function buildStickFigure(config, THREE) {
     group.add(capeMesh);
   }
 
-  const rig = { group, points, limbMeshes, headMesh, hatMesh, capeMesh, capePoints };
+  const rig = { group, points, limbMeshes, jointMeshes, headMesh, hatMesh, capeMesh, capePoints };
   // stash the THREE ref + equip so applyEquip can rebuild hat/cape in place.
   rig._THREE = THREE;
   rig._equip = equip;
