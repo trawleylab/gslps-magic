@@ -105,95 +105,125 @@ const DEFAULT_SAVE = {
    construct geometry, which the contract explicitly allows.
    ============================================================ */
 
-// §F — point order (index 0..8). The ragdoll/engine relies on this exactly.
-const POINT_NAMES = ['head', 'neck', 'chest', 'hip', 'Lhand', 'Rhand', 'Lfoot', 'Rfoot', 'hat'];
+// §F — point order. A proper little humanoid: head/neck/chest/hip spine, two
+// arms (shoulder→elbow→hand) and two legs (hip→knee→foot) so the limbs BEND at
+// elbows and knees when it ragdolls. head=0, chest=2, hip=3 are kept at their
+// old indices; 'hat' stays last. The engine derives all topology from REST so
+// this list + CONSTRAINTS are the single source of truth.
+const POINT_NAMES = [
+  'head', 'neck', 'chest', 'hip',
+  'Lshoulder', 'Lelbow', 'Lhand',
+  'Rshoulder', 'Relbow', 'Rhand',
+  'Lknee', 'Lfoot', 'Rknee', 'Rfoot',
+  'hat',
+];
+const NI = {}; POINT_NAMES.forEach((n, i) => { NI[n] = i; });
 
-// §F — constraints as index pairs into POINT_NAMES. head-hat (0-8) is severable.
-// limbMeshes is built one-per-constraint in THIS order so the engine can
-// iterate constraints and limbMeshes in lockstep.
+// Bones as [a, b] index pairs. limbMeshes is built one-per-constraint in THIS
+// order so the engine iterates constraints and limbMeshes in lockstep. The
+// head-hat link (last) is severable so the hat flies off on a crash.
 const CONSTRAINTS = [
-  [0, 1], // head-neck
-  [1, 2], // neck-chest
-  [2, 3], // chest-hip
-  [2, 4], // chest-Lhand
-  [2, 5], // chest-Rhand
-  [3, 6], // hip-Lfoot
-  [3, 7], // hip-Rfoot
-  [0, 8], // head-hat (severable)
+  [NI.head, NI.neck],          // 0  neck
+  [NI.neck, NI.chest],         // 1  upper torso
+  [NI.chest, NI.hip],          // 2  torso
+  [NI.chest, NI.Lshoulder],    // 3  L clavicle
+  [NI.Lshoulder, NI.Lelbow],   // 4  L upper arm
+  [NI.Lelbow, NI.Lhand],       // 5  L forearm
+  [NI.chest, NI.Rshoulder],    // 6  R clavicle
+  [NI.Rshoulder, NI.Relbow],   // 7  R upper arm
+  [NI.Relbow, NI.Rhand],       // 8  R forearm
+  [NI.hip, NI.Lknee],          // 9  L thigh
+  [NI.Lknee, NI.Lfoot],        // 10 L shin
+  [NI.hip, NI.Rknee],          // 11 R thigh
+  [NI.Rknee, NI.Rfoot],        // 12 R shin
+  [NI.head, NI.hat],           // 13 head-hat (severable, invisible)
 ];
 
-// Per-constraint cylinder radius (CONSTRAINTS order). The spine segments are
-// chunky so the figure reads as a body (something for the colour + cape to sit
-// on); arms/legs are thinner. The head-hat link is invisible.
+// Per-constraint cylinder radius (CONSTRAINTS order) — tapered for a human-ish
+// silhouette: chunky torso, slimmer arms/legs, thinner forearms.
 const LIMB_RADII = [
-  0.085, // head-neck (neck)
-  0.16,  // neck-chest (upper body)
-  0.21,  // chest-hip (torso)
-  0.082, // chest-Lhand (arm)
-  0.082, // chest-Rhand (arm)
-  0.10,  // hip-Lfoot (leg)
-  0.10,  // hip-Rfoot (leg)
-  0.05,  // head-hat (invisible connector)
+  0.075, // neck
+  0.155, // upper torso
+  0.165, // torso
+  0.095, // L clavicle
+  0.085, // L upper arm
+  0.068, // L forearm
+  0.095, // R clavicle
+  0.085, // R upper arm
+  0.068, // R forearm
+  0.11,  // L thigh
+  0.088, // L shin
+  0.11,  // R thigh
+  0.088, // R shin
+  0.05,  // head-hat (invisible)
 ];
 
-// Rounded joint spheres so the figure looks like a chunky little person rather
-// than cut sticks. [pointIndex, radius] — built with the shared limb material
-// so they recolour with the body, and the engine repositions them every frame
-// at their point (so they follow the seated/idle/ragdoll poses). Head (0) and
-// hat (8) are their own meshes and are not listed here.
+// Per-constraint material: 's' = skin (bare forearms), 'h' = invisible hat
+// link, else the clothing colour. Lets the figure read as a person in a
+// coloured outfit with bare lower arms.
+const LIMB_MATS = ['s', 'c', 'c', 'c', 'c', 's', 'c', 'c', 's', 'c', 'c', 'c', 'c', 'h'];
+
+// Rounded joint spheres so joints look like joints, not cut tubes.
+// [pointName, radius, materialKey('c'|'s'|'shoe')]. The engine repositions each
+// at its point every frame (so they follow seated/idle/ragdoll). Head and hat
+// are their own meshes and not listed here.
 const JOINTS = [
-  [1, 0.13],  // neck collar (blends head into body)
-  [2, 0.225], // chest / shoulders
-  [3, 0.185], // hip / pelvis
-  [4, 0.115], // left hand
-  [5, 0.115], // right hand
-  [6, 0.125], // left foot
-  [7, 0.125], // right foot
+  ['neck',      0.075, 's'],
+  ['chest',     0.17,  'c'],
+  ['hip',       0.145, 'c'],
+  ['Lshoulder', 0.10,  'c'],
+  ['Rshoulder', 0.10,  'c'],
+  ['Lelbow',    0.072, 's'],
+  ['Relbow',    0.072, 's'],
+  ['Lhand',     0.085, 's'],
+  ['Rhand',     0.085, 's'],
+  ['Lknee',     0.092, 'c'],
+  ['Rknee',     0.092, 'c'],
+  ['Lfoot',     0.10,  'shoe'],
+  ['Rfoot',     0.10,  'shoe'],
 ];
 
-// Canonical standing-pose anchor positions (local figure space, y-up,
-// feet near y=0, total height ~1.8). Used to derive rest lengths and as
-// the basis the engine offsets from. Hat sits just above the head.
+// Canonical standing pose (local space, feet ~y=0, ~1.95 tall). Used for rest
+// lengths and as the idle hero pose. Hat sits just above the head.
 const STAND = {
-  head:  { x: 0.00, y: 1.60, z: 0.00 },
-  neck:  { x: 0.00, y: 1.28, z: 0.00 },
-  chest: { x: 0.00, y: 1.04, z: 0.00 },
-  hip:   { x: 0.00, y: 0.70, z: 0.00 },
-  Lhand: { x: -0.38, y: 0.86, z: 0.00 },
-  Rhand: { x: 0.38, y: 0.86, z: 0.00 },
-  Lfoot: { x: -0.18, y: 0.02, z: 0.00 },
-  Rfoot: { x: 0.18, y: 0.02, z: 0.00 },
-  hat:   { x: 0.00, y: 1.90, z: 0.00 },
+  head:      { x: 0.00,  y: 1.78, z: 0.00 },
+  neck:      { x: 0.00,  y: 1.58, z: 0.00 },
+  chest:     { x: 0.00,  y: 1.40, z: 0.00 },
+  hip:       { x: 0.00,  y: 0.95, z: 0.00 },
+  Lshoulder: { x: -0.24, y: 1.50, z: 0.00 },
+  Lelbow:    { x: -0.30, y: 1.18, z: 0.02 },
+  Lhand:     { x: -0.33, y: 0.90, z: 0.04 },
+  Rshoulder: { x: 0.24,  y: 1.50, z: 0.00 },
+  Relbow:    { x: 0.30,  y: 1.18, z: 0.02 },
+  Rhand:     { x: 0.33,  y: 0.90, z: 0.04 },
+  Lknee:     { x: -0.15, y: 0.48, z: 0.03 },
+  Lfoot:     { x: -0.16, y: 0.02, z: 0.10 },
+  Rknee:     { x: 0.15,  y: 0.48, z: 0.03 },
+  Rfoot:     { x: 0.16,  y: 0.02, z: 0.10 },
+  hat:       { x: 0.00,  y: 1.99, z: 0.00 },
 };
 
-// Seated cockpit pose (knees up, hands forward gripping, slight lean) —
-// engine places points here during flight. Offsets are absolute local
-// positions (NOT deltas) so the engine can drop them straight in.
+// Seated cockpit pose: knees up forward, hands out gripping, slight lean.
 const SEATED = {
-  head:  { x: 0.00, y: 1.40, z: 0.10 },
-  neck:  { x: 0.00, y: 1.12, z: 0.06 },
-  chest: { x: 0.00, y: 0.90, z: 0.00 },
-  hip:   { x: 0.00, y: 0.60, z: -0.04 },
-  Lhand: { x: -0.30, y: 0.82, z: 0.46 },
-  Rhand: { x: 0.30, y: 0.82, z: 0.46 },
-  Lfoot: { x: -0.24, y: 0.30, z: 0.40 },
-  Rfoot: { x: 0.24, y: 0.30, z: 0.40 },
-  hat:   { x: 0.00, y: 1.70, z: 0.12 },
+  head:      { x: 0.00,  y: 1.30, z: 0.06 },
+  neck:      { x: 0.00,  y: 1.12, z: 0.04 },
+  chest:     { x: 0.00,  y: 0.94, z: 0.00 },
+  hip:       { x: 0.00,  y: 0.62, z: -0.05 },
+  Lshoulder: { x: -0.22, y: 1.04, z: 0.02 },
+  Lelbow:    { x: -0.27, y: 0.92, z: 0.28 },
+  Lhand:     { x: -0.20, y: 0.86, z: 0.52 },
+  Rshoulder: { x: 0.22,  y: 1.04, z: 0.02 },
+  Relbow:    { x: 0.27,  y: 0.92, z: 0.28 },
+  Rhand:     { x: 0.20,  y: 0.86, z: 0.52 },
+  Lknee:     { x: -0.18, y: 0.62, z: 0.42 },
+  Lfoot:     { x: -0.20, y: 0.34, z: 0.30 },
+  Rknee:     { x: 0.18,  y: 0.62, z: 0.42 },
+  Rfoot:     { x: 0.20,  y: 0.34, z: 0.30 },
+  hat:       { x: 0.00,  y: 1.50, z: 0.07 },
 };
 
-// Idle hero pose (relaxed standing, hands a touch out — for the rotating
-// shop/win preview).
-const IDLE = {
-  head:  { x: 0.00, y: 1.60, z: 0.00 },
-  neck:  { x: 0.00, y: 1.28, z: 0.00 },
-  chest: { x: 0.00, y: 1.04, z: 0.00 },
-  hip:   { x: 0.00, y: 0.70, z: 0.00 },
-  Lhand: { x: -0.40, y: 0.80, z: 0.04 },
-  Rhand: { x: 0.40, y: 0.80, z: 0.04 },
-  Lfoot: { x: -0.17, y: 0.02, z: 0.02 },
-  Rfoot: { x: 0.17, y: 0.02, z: -0.02 },
-  hat:   { x: 0.00, y: 1.90, z: 0.00 },
-};
+// Idle hero pose (relaxed standing for the rotating shop/win preview).
+const IDLE = STAND;
 
 function _dist(a, b) {
   const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
@@ -217,14 +247,14 @@ const REST = {
     a, b,
     aName: POINT_NAMES[a], bName: POINT_NAMES[b],
     len: _dist(STAND[POINT_NAMES[a]], STAND[POINT_NAMES[b]]),
-    severable: a === 0 && b === 8,
+    severable: POINT_NAMES[a] === 'head' && POINT_NAMES[b] === 'hat',
   })),
   stand: STAND,
   seated: SEATED,
   idle: IDLE,
-  HEAD_RADIUS: 0.32,
+  HEAD_RADIUS: 0.23,
   LIMB_RADIUS: 0.09,
-  HEIGHT: 1.8,
+  HEIGHT: 1.95,
 };
 
 // Normalise an equip config: exactly one valid value per slot, fall back
@@ -240,8 +270,10 @@ function normaliseEquip(config) {
   return out;
 }
 
-// Skin tone for the head — kept constant; only limbs/torso recolour.
+// Skin tone (head, bare forearms, hands) + shoe colour — kept constant; only
+// the clothing limbs/torso recolour with the chosen colour.
 const SKIN_HEX = 0xffd8a8;
+const SHOE_HEX = 0x3a3a44;
 
 // Build the hat mesh for a given hat id (or null for 'none'). Each hat is a
 // small group of chunky low-poly primitives, centred so its base sits at the
@@ -365,48 +397,56 @@ function buildStickFigure(config, THREE) {
   const group = new THREE.Group();
   group.userData.equip = equip;
 
-  // ONE shared limb material (so colour swap is a single .color.set call) +
-  // a separate head/skin material so the colour swap doesn't tint the face.
+  // Materials: ONE shared clothing material (colour swap = a single .color.set),
+  // a skin material (head/forearms/hands), and a shoe material. Only the
+  // clothing material recolours.
   const limbMat = new THREE.MeshLambertMaterial({ color: limbHex });
-  const headMat = new THREE.MeshLambertMaterial({ color: SKIN_HEX });
+  const skinMat = new THREE.MeshLambertMaterial({ color: SKIN_HEX });
+  const shoeMat = new THREE.MeshLambertMaterial({ color: SHOE_HEX });
+  const matFor = (key) => key === 's' ? skinMat : key === 'shoe' ? shoeMat : limbMat;
   group.userData.limbMat = limbMat;
-  group.userData.headMat = headMat;
+  group.userData.headMat = skinMat;
 
-  // Build the 9 points from the standing pose. {pos,prev,pinned} — the engine
+  // Build the points from the standing pose. {pos,prev,pinned} — the engine
   // mutates pos/prev; pinned defaults false (engine pins as needed).
   const points = POINT_NAMES.map((name) => {
     const p = STAND[name];
     return { name, pos: { x: p.x, y: p.y, z: p.z }, prev: { x: p.x, y: p.y, z: p.z }, pinned: false };
   });
 
-  // Head sphere (its own mesh; engine positions it at the head point).
-  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(REST.HEAD_RADIUS, 16, 12), headMat);
+  // Head sphere (skin) + a simple face: two eyes on the +z front. The engine
+  // positions the head by its point (no rotation), so the face stays forward —
+  // toward the viewer in the rotating shop preview.
+  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(REST.HEAD_RADIUS, 18, 14), skinMat);
   headMesh.position.set(STAND.head.x, STAND.head.y, STAND.head.z);
+  const eyeMat = new THREE.MeshLambertMaterial({ color: 0x20232b });
+  const eyeGeo = new THREE.SphereGeometry(REST.HEAD_RADIUS * 0.19, 8, 6);
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+    eye.position.set(sx * REST.HEAD_RADIUS * 0.42, REST.HEAD_RADIUS * 0.18, REST.HEAD_RADIUS * 0.88);
+    headMesh.add(eye);
+  }
   group.add(headMesh);
 
-  // One reusable thin cylinder per constraint. Built unit-height (1.0) along
-  // +Y, origin-centred, so the engine sets position=midpoint, scale.y=length,
-  // quaternion=setFromUnitVectors(UP, dir). The hat "limb" (head-hat) gets a
-  // cylinder too for API symmetry but is hidden (the hat mesh covers it).
+  // One reusable cylinder per bone (unit-height along +Y, origin-centred — the
+  // engine sets position=midpoint, scale.y=length, quaternion). Per-bone radius
+  // + material; the invisible head-hat link is hidden.
   const limbMeshes = CONSTRAINTS.map(([a, b], i) => {
-    const isHatLink = a === 0 && b === 8;
+    const hidden = LIMB_MATS[i] === 'h';
     const r = LIMB_RADII[i] != null ? LIMB_RADII[i] : 0.09;
-    const m = new THREE.Mesh(
-      new THREE.CylinderGeometry(r, r, 1, 10, 1),
-      limbMat
-    );
-    if (isHatLink) m.visible = false; // invisible connector to the hat anchor
-    // Seed its transform to the standing pose so it looks right pre-drive.
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 10, 1), matFor(LIMB_MATS[i]));
+    if (hidden) m.visible = false;
     _orientLimb(m, points[a].pos, points[b].pos, THREE);
     group.add(m);
     return m;
   });
 
-  // Rounded joint spheres at neck/chest/hip/hands/feet so the figure reads as a
-  // chunky little person. Shared limb material → recolour for free; the engine
-  // repositions each at its point every frame (so they follow every pose).
-  const jointMeshes = JOINTS.map(([i, r]) => {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 9), limbMat);
+  // Rounded joint spheres (shoulders/elbows/knees/hands/feet/hip/neck) so the
+  // joints look like joints. The engine repositions each at its point every
+  // frame, so they follow seated/idle/ragdoll poses.
+  const jointMeshes = JOINTS.map(([name, r, matKey]) => {
+    const i = NI[name];
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 9), matFor(matKey));
     const p = points[i].pos;
     m.position.set(p.x, p.y, p.z);
     group.add(m);
@@ -483,8 +523,8 @@ function applyStickEquip(rig, config) {
     }
     const newHat = _buildHat(equip.hat, THREE);
     if (newHat) {
-      const hp = rig.points[8] ? rig.points[8].pos : STAND.hat;
-      newHat.position.set(hp.x, hp.y, hp.z);
+      const hatPt = rig.points[NI.hat] ? rig.points[NI.hat].pos : STAND.hat;
+      newHat.position.set(hatPt.x, hatPt.y, hatPt.z);
       rig.group.add(newHat);
     }
     rig.hatMesh = newHat;

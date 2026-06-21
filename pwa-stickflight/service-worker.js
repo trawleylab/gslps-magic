@@ -7,13 +7,16 @@
 // The vendored Three.js (vendor/three.min.js) MUST be precached — without it
 // the game cannot run offline.
 
-const CACHE_VERSION = 'stickflight-v3';
+const CACHE_VERSION = 'stickflight-v4';
+// The JS/CSS carry a ?v= cache-buster (see index.html) so a version bump always
+// fetches fresh past any HTTP cache. Precache the SAME queried URLs the page
+// requests so the first offline load still has them.
 const CACHE_FILES = [
   './',
   './index.html',
-  './styles.css',
-  './flight.js',
-  './app.js',
+  './styles.css?v=4',
+  './flight.js?v=4',
+  './app.js?v=4',
   './manifest.json',
   './vendor/three.min.js',
   './icons/icon-192.png',

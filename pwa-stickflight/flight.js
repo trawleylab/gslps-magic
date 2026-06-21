@@ -145,9 +145,12 @@
 
   // ragdoll
   let ragPoints = [];       // [{pos:Vec3, prev:Vec3, pinned:bool}] order = POINT_NAMES
-  let ragConstraints = [];  // [{a,b,len,active}]
+  let ragConstraints = [];  // [{a,b,len,active,severable}] — derived from the rig
   let capePoints = [];      // 3-pt chain off chest (if equipped)
   let capeConstraints = [];
+  // semantic point indices, resolved from POINT_NAMES when the rig is built, so
+  // the engine never hardcodes the skeleton layout
+  let HEAD_I = 0, HAT_I = -1, CHEST_I = 2, HIP_I = 3;
   let ragSettleTimer = 0;
   let hatSevered = false;
   let useRigidFallback = false;
@@ -890,11 +893,22 @@
     for (let i = 0; i < names.length; i++) {
       ragPoints.push({ pos: new THREE.Vector3(), prev: new THREE.Vector3(), pinned: false });
     }
-    // constraint pairs (by index) per contract §A
-    const pairs = [
-      [0, 1], [1, 2], [2, 3], [2, 4], [2, 5], [3, 6], [3, 7], [0, 8]
-    ];
-    ragConstraints = pairs.map(([a, b]) => ({ a, b, len: restLen(REST, names, a, b), active: true }));
+    // Derive the bones from the figure's own constraint list (the single source
+    // of truth in StickFigure.REST.constraints), so adding elbows/knees/etc.
+    // needs no engine change.
+    const cons = (REST.constraints && REST.constraints.length) ? REST.constraints
+      : [[0, 1], [1, 2], [2, 3], [2, 4], [2, 5], [3, 6], [3, 7], [0, 8]]
+        .map(([a, b]) => ({ a, b, severable: a === 0 && b === 8 }));
+    ragConstraints = cons.map((c) => ({
+      a: c.a, b: c.b,
+      len: (c.len > 1e-4 ? c.len : restLen(REST, names, c.a, c.b)),
+      active: true, severable: !!c.severable,
+    }));
+    // resolve semantic indices used by the cape/hat/head logic below
+    HEAD_I = names.indexOf('head') >= 0 ? names.indexOf('head') : 0;
+    HAT_I = names.indexOf('hat');
+    CHEST_I = names.indexOf('chest') >= 0 ? names.indexOf('chest') : 2;
+    HIP_I = names.indexOf('hip') >= 0 ? names.indexOf('hip') : 3;
 
     // cape chain (3-pt) off chest, if rig provides capePoints
     capePoints = [];
@@ -953,14 +967,14 @@
         m.scale.set(1, len, 1);
       }
     }
-    // head sphere at point[0]
-    if (rig.headMesh) rig.headMesh.position.copy(ragPoints[0].pos);
-    // hat parented to head point (point[8]) unless severed
-    if (rig.hatMesh) {
+    // head sphere at the head point
+    if (rig.headMesh) rig.headMesh.position.copy(ragPoints[HEAD_I].pos);
+    // hat parented to the hat point unless severed
+    if (rig.hatMesh && HAT_I >= 0) {
       rig.hatMesh.visible = true;
-      rig.hatMesh.position.copy(ragPoints[8].pos);
+      rig.hatMesh.position.copy(ragPoints[HAT_I].pos);
       // orient hat along head->hat
-      _v2.subVectors(ragPoints[8].pos, ragPoints[0].pos);
+      _v2.subVectors(ragPoints[HAT_I].pos, ragPoints[HEAD_I].pos);
       if (_v2.length() > 1e-4) {
         _v3.copy(_v2).normalize();
         rig.hatMesh.quaternion.setFromUnitVectors(UP, _v3);
@@ -1001,7 +1015,7 @@
       rewrite(capePoints);
     } else {
       // static drape from chest down-and-back toward (and below) the hip
-      const chest = ragPoints[2].pos, hip = ragPoints[3].pos;
+      const chest = ragPoints[CHEST_I].pos, hip = ragPoints[HIP_I].pos;
       _capeS0.pos.x = chest.x;                    _capeS0.pos.y = chest.y;                    _capeS0.pos.z = chest.z - 0.10;
       _capeS1.pos.x = (chest.x + hip.x) * 0.5;    _capeS1.pos.y = (chest.y + hip.y) * 0.5;    _capeS1.pos.z = (chest.z + hip.z) * 0.5 - 0.28;
       _capeS2.pos.x = hip.x;                      _capeS2.pos.y = hip.y - 0.34;               _capeS2.pos.z = hip.z - 0.46;
@@ -1042,7 +1056,7 @@
     }
     // cape chain solve
     if (capePoints.length) {
-      capePoints[0].pos.copy(ragPoints[2].pos); // pin to chest
+      capePoints[0].pos.copy(ragPoints[CHEST_I].pos); // pin to chest
       capePoints[0].prev.copy(capePoints[0].pos);
       for (let i = 1; i < capePoints.length; i++) {
         const p = capePoints[i];
@@ -1111,7 +1125,7 @@
 
     // cape chain seed (hang off chest)
     if (capePoints.length) {
-      const chest = ragPoints[2].pos;
+      const chest = ragPoints[CHEST_I].pos;
       for (let i = 0; i < capePoints.length; i++) {
         capePoints[i].pos.set(chest.x, chest.y - i * 0.5, chest.z + 0.2 + i * 0.2);
         capePoints[i].prev.copy(capePoints[i].pos);
@@ -1119,14 +1133,15 @@
       capePoints[0].pinned = true;
     }
 
-    // hat severing on a hard crash — delete head-hat constraint
+    // hat severing on a hard crash — cut the severable (head-hat) constraint so
+    // the hat flies off
     hatSevered = true;
     for (const c of ragConstraints) {
-      if (c.a === 0 && c.b === 8) c.active = false;
+      if (c.severable) c.active = false;
     }
-    // give the hat its own little launch (point 8)
-    if (rig.hatMesh) {
-      const hp = ragPoints[8];
+    // give the hat its own little launch
+    if (rig.hatMesh && HAT_I >= 0) {
+      const hp = ragPoints[HAT_I];
       const hndt = 1 / 60;
       hp.prev.set(
         hp.pos.x - (planeVel.x + (Math.random() - 0.5) * 10) * hndt,
@@ -1749,12 +1764,13 @@
       const p = pose[names[i]] || { x: 0, y: 0, z: 0 };
       pts.push(new THREE.Vector3(p.x, p.y, p.z));
     }
-    const pairs = [[0, 1], [1, 2], [2, 3], [2, 4], [2, 5], [3, 6], [3, 7], [0, 8]];
+    const cons = (SF.REST && SF.REST.constraints) || [];
     const limbs = heroRig.limbMeshes || [];
-    for (let i = 0; i < pairs.length && i < limbs.length; i++) {
+    for (let i = 0; i < cons.length && i < limbs.length; i++) {
       const m = limbs[i];
       if (!m) continue;
-      const a = pts[pairs[i][0]], b = pts[pairs[i][1]];
+      if (cons[i].severable) { m.visible = false; continue; } // invisible head-hat link
+      const a = pts[cons[i].a], b = pts[cons[i].b];
       const dirv = new THREE.Vector3().subVectors(b, a);
       const len = dirv.length();
       m.visible = true;
@@ -1764,16 +1780,18 @@
         m.scale.set(1, len, 1);
       }
     }
-    if (heroRig.headMesh) heroRig.headMesh.position.copy(pts[0]);
+    const heHead = names.indexOf('head') >= 0 ? names.indexOf('head') : 0;
+    const heHat = names.indexOf('hat');
+    if (heroRig.headMesh) heroRig.headMesh.position.copy(pts[heHead]);
     if (heroRig.jointMeshes) {
       for (const j of heroRig.jointMeshes) {
         if (j.mesh && pts[j.i]) j.mesh.position.copy(pts[j.i]);
       }
     }
-    if (heroRig.hatMesh) {
+    if (heroRig.hatMesh && heHat >= 0) {
       heroRig.hatMesh.visible = true;
-      heroRig.hatMesh.position.copy(pts[8]);
-      const dv = new THREE.Vector3().subVectors(pts[8], pts[0]);
+      heroRig.hatMesh.position.copy(pts[heHat]);
+      const dv = new THREE.Vector3().subVectors(pts[heHat], pts[heHead]);
       if (dv.length() > 1e-4) heroRig.hatMesh.quaternion.setFromUnitVectors(UP, dv.normalize());
     }
     if (heroRig.capeMesh) {
