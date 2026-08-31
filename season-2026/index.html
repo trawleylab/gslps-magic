@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<!--
+  GSLPS Magic (B3) season showcase.
+  HOW TO UPDATE AFTER THE NEXT ROUND:
+  1) The DATA object at the top of the <script> below drives the title numbers,
+     the climb chart, the player cards (index.html) / team score wall (team.html)
+     and the runs card. Add the new game to DATA.games, append each boy's scoring
+     times to his rows[] ("mm:ss since tip-off", the elapsed_game_mmss field in
+     gslps_magic_b3_spring2026_results.json), update his chips/big/blurb, and
+     bump DATA.title.points and DATA.title.games.
+  2) HAND-EDITED sections you must update in the HTML itself: the
+     "Mount Evelyn, twice" card and the final "Next up" card (opponent, date,
+     targets). The Hornets targets come from
+     "HORNETS out/the_hornets_spring2026_all_games.json".
+  3) team.html is the no-individual-stats version: same DATA, same steps.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#150A3D">
+<title>GSLPS Magic: the season so far</title>
+<meta name="description" content="A season highlights reel for the boys. Open it on your phone. Go Magic!">
+<meta property="og:title" content="GSLPS Magic: the season so far">
+<meta property="og:description" content="A season highlights reel for the boys. Open it on your phone. Go Magic!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://trawleylab.github.io/gslps-magic/season-2026/">
+<style>
+:root{
+  --bg:#150A3D; --bg2:#1E1050; --card:#231260;
+  --gold:#FFC53D; --gold-soft:rgba(255,197,61,.16);
+  --ink:#FFFFFF; --ink2:#CBC1F2; --mut:#8B7FC7;
+  --line:rgba(255,255,255,.10);
+  --r:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  overflow:hidden;
+}
+#reel{
+  height:100vh; height:100dvh;
+  overflow-y:auto; overflow-x:hidden;
+  scroll-snap-type:y mandatory;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+.card{
+  min-height:100vh; min-height:100dvh;
+  scroll-snap-align:start; scroll-snap-stop:always;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:max(20px,env(safe-area-inset-top)) 22px max(30px,env(safe-area-inset-bottom));
+  position:relative; overflow:hidden;
+}
+.card::before{ /* soft glow, alternating corners */
+  content:""; position:absolute; inset:auto -30% -20% auto; width:80vw; height:80vw;
+  background:radial-gradient(circle, rgba(255,197,61,.10), transparent 65%);
+  pointer-events:none;
+}
+.card:nth-child(even)::before{inset:-20% auto auto -30%}
+.inner{position:relative; max-width:480px; width:100%; margin:0 auto}
+
+/* ---------- shared bits ---------- */
+.kicker{
+  font-size:13px; font-weight:800; letter-spacing:.14em; color:var(--gold);
+  text-transform:uppercase; margin-bottom:8px;
+}
+h1,h2{font-weight:900; letter-spacing:-.02em; line-height:1.02}
+h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
+.sub{color:var(--ink2); font-size:15px; line-height:1.45}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0}
+.chip{
+  background:var(--card); border:1px solid var(--line); color:var(--ink2);
+  border-radius:999px; padding:7px 13px; font-size:13px; font-weight:700;
+}
+.chip b{color:var(--gold)}
+.panel{
+  background:linear-gradient(160deg,var(--card),var(--bg2));
+  border:1px solid var(--line); border-radius:var(--r); padding:16px;
+}
+.hero{
+  font-size:clamp(64px,24vw,116px); font-weight:900; letter-spacing:-.04em;
+  color:var(--gold); line-height:1; font-variant-numeric:tabular-nums;
+}
+.hero-label{color:var(--ink2); font-size:15px; font-weight:700; margin-top:2px}
+.gold-banner{
+  background:var(--gold); color:#1A0F45; border-radius:var(--r);
+  padding:14px 16px; font-weight:800; font-size:15.5px; line-height:1.35;
+  display:flex; gap:10px; align-items:flex-start;
+}
+.gold-banner svg{flex:0 0 auto; margin-top:1px}
+.foot{color:var(--mut); font-size:12px; margin-top:12px}
+
+/* enter animations (hidden states are gated on html.js so a JS failure
+   degrades to a fully visible static page, not a blank one) */
+.up{transition:opacity .6s ease var(--d,0s), transform .6s cubic-bezier(.22,1,.36,1) var(--d,0s)}
+.pop{transition:opacity .4s ease var(--d,0s), transform .45s cubic-bezier(.34,1.56,.64,1) var(--d,0s)}
+.js .up{opacity:0; transform:translateY(26px)}
+.js .pop{opacity:0; transform:scale(.4)}
+.card.in .up{opacity:1; transform:translateY(0)}
+.card.in .pop{opacity:1; transform:scale(1)}
+
+/* ---------- title card ---------- */
+#title{text-align:center}
+#title .ball{margin:0 auto 14px; width:64px; height:64px; animation:none}
+.card.in #title-ball{animation:bounce 1.6s cubic-bezier(.28,.84,.42,1) .3s infinite}
+@keyframes bounce{
+  0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)}
+}
+#title h1{font-size:clamp(44px,14vw,64px)}
+#title .grade{color:var(--ink2); font-weight:800; font-size:17px; margin-top:4px}
+.story{
+  display:inline-block; margin-top:12px; padding:8px 16px; border-radius:999px;
+  border:2px solid var(--gold); color:var(--gold); font-weight:900; font-size:14px;
+  letter-spacing:.16em; text-transform:uppercase;
+}
+.hint{
+  position:absolute; left:0; right:0; bottom:max(18px,env(safe-area-inset-bottom));
+  text-align:center; color:var(--ink2); font-size:13px; font-weight:700;
+  transition:opacity .5s;
+}
+.hint .chev{display:block; margin:0 auto 2px; animation:nudge 1.5s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)}}
+
+/* ---------- climb card ---------- */
+.chart{display:flex; align-items:flex-end; gap:8px; height:min(36vh,300px); margin:18px 0 4px}
+.col{flex:1; position:relative; height:100%}
+.bar{
+  position:absolute; bottom:0; left:0; right:0;
+  background:var(--mut); border-radius:8px 8px 3px 3px;
+  transform-origin:bottom;
+  transition:transform .7s cubic-bezier(.22,1,.36,1) var(--d,0s);
+}
+.col.best .bar{background:var(--gold); box-shadow:0 0 24px rgba(255,197,61,.45)}
+.js .bar{transform:scaleY(0)}
+.card.in .bar{transform:scaleY(1)}
+.bar-val{
+  position:absolute; left:0; right:0; text-align:center;
+  font-weight:900; font-size:17px; color:var(--ink);
+  transition:opacity .4s ease var(--dv,0s);
+  font-variant-numeric:tabular-nums;
+}
+.col.best .bar-val{color:var(--gold)}
+.js .bar-val{opacity:0}
+.card.in .bar-val{opacity:1}
+.bar-star{
+  position:absolute; left:50%; transform:translateX(-50%);
+  transition:transform .45s cubic-bezier(.34,1.56,.64,1) 1.6s;
+}
+.js .bar-star{transform:translateX(-50%) scale(0)}
+.card.in .bar-star{transform:translateX(-50%) scale(1)}
+.xlabels{display:flex; gap:8px; margin-bottom:14px}
+.xlabels span{flex:1; text-align:center; color:var(--ink2); font-size:12.5px; font-weight:800}
+
+/* ---------- bombs card ---------- */
+.twice{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0 10px}
+.twice .panel{text-align:center; padding:18px 10px}
+.twice .when{color:var(--ink2); font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; min-height:2.4em; display:flex; align-items:center; justify-content:center}
+.twice .n{font-size:clamp(52px,17vw,84px); font-weight:900; color:var(--gold); line-height:1.05; font-variant-numeric:tabular-nums}
+.twice .what{color:var(--ink2); font-size:13px; font-weight:700}
+.twice .final{color:var(--mut); font-size:12px; margin-top:6px}
+.held{
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  margin:6px 0 12px; font-weight:900; font-variant-numeric:tabular-nums;
+}
+.held .before{font-size:34px; color:var(--mut)}
+.held .after{font-size:46px; color:var(--gold)}
+.held .arrow{color:var(--ink2)}
+.held-label{text-align:center; color:var(--ink2); font-size:14px; font-weight:700; margin:-6px 0 14px}
+
+/* ---------- player cards ---------- */
+.phead{display:flex; align-items:center; gap:14px}
+.jersey{
+  flex:0 0 auto; width:64px; height:64px; border-radius:50%;
+  border:3px solid var(--gold); color:var(--gold);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:19px; background:var(--gold-soft);
+}
+.pname{font-size:clamp(30px,9.5vw,40px); font-weight:900; line-height:1}
+.psur{color:var(--ink2); font-weight:800; font-size:16px; margin-top:2px}
+.bigstat{margin:10px 0 4px}
+.blurb{color:var(--ink2); font-size:15.5px; line-height:1.5; font-weight:600; margin:10px 0 14px}
+.blurb b{color:var(--gold)}
+.tl{display:flex; flex-direction:column; gap:9px}
+.tl-row{display:flex; align-items:center; gap:9px}
+.tl-lab{flex:0 0 76px; color:var(--ink2); font-size:11.5px; font-weight:800; text-align:right; line-height:1.2}
+.track{
+  position:relative; flex:1; height:22px; border-radius:999px;
+  background:var(--card); border:1px solid var(--line);
+}
+.track .ht{position:absolute; left:50%; top:4px; bottom:4px; width:1px; background:var(--line)}
+.track .none{position:absolute; right:9px; top:50%; transform:translateY(-50%); color:var(--mut); font-size:10px; font-weight:800; letter-spacing:.05em}
+.dot{
+  position:absolute; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px;
+  border-radius:50%; background:var(--gold);
+  box-shadow:0 0 0 2px var(--bg), 0 0 10px rgba(255,197,61,.45);
+}
+.dot.ft{background:transparent; border:2.5px solid var(--gold); box-shadow:0 0 0 2px var(--bg)}
+.tl-key{color:var(--mut); font-size:11.5px; font-weight:700; margin-top:10px}
+.tl-key i{font-style:normal; color:var(--gold)}
+.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:9px}
+.tile{
+  border-radius:14px; padding:12px 6px; text-align:center;
+  background:var(--gold); color:#1A0F45;
+}
+.tile .tr{font-size:15px; font-weight:900}
+.tile .to{font-size:11px; font-weight:800; opacity:.75}
+
+/* ---------- runs card ---------- */
+.run{margin:13px 0}
+.run-head{color:var(--ink2); font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; margin-bottom:7px}
+.run-line{display:flex; flex-wrap:wrap; align-items:center; gap:7px}
+.rchip{
+  background:var(--card); border:1px solid var(--line);
+  border-radius:12px; padding:8px 11px; font-weight:800; font-size:14px;
+}
+.rchip b{color:var(--gold)}
+.rtotal{
+  background:var(--gold); color:#1A0F45; border-radius:12px;
+  padding:8px 11px; font-weight:900; font-size:14px;
+}
+
+/* ---------- final card ---------- */
+#final{text-align:center}
+#final .vs{font-size:clamp(38px,12vw,54px); font-weight:900; line-height:1.05}
+#final .date{color:var(--ink2); font-weight:800; font-size:16px; margin-top:6px}
+.target{margin:16px auto; text-align:left; max-width:420px}
+.target .t-k{color:var(--gold); font-weight:900; font-size:13px; letter-spacing:.14em; text-transform:uppercase}
+.trow{display:flex; gap:12px; align-items:center; margin-top:12px}
+.tnum{
+  flex:0 0 auto; min-width:54px; text-align:center;
+  background:var(--gold-soft); border:2px solid var(--gold); color:var(--gold);
+  border-radius:14px; font-weight:900; font-size:23px; padding:9px 6px;
+  font-variant-numeric:tabular-nums;
+}
+.ttext{font-size:14px; line-height:1.4; color:var(--ink2); font-weight:600}
+.ttext b{color:var(--ink)}
+.gomagic{
+  font-size:clamp(52px,17vw,84px); font-weight:900; letter-spacing:-.03em;
+  color:var(--gold); line-height:1; margin-top:10px;
+}
+#final .ball{width:52px; height:52px; margin:16px auto 0}
+.card.in #final-ball{animation:bounce 1.2s cubic-bezier(.28,.84,.42,1) .2s infinite}
+.backtop{
+  margin-top:22px; background:none; border:1.5px solid var(--line); color:var(--ink2);
+  border-radius:999px; padding:9px 18px; font-size:13px; font-weight:800; font-family:inherit;
+  cursor:pointer;
+}
+
+/* ---------- progress dots ---------- */
+#prog{
+  position:fixed; right:7px; top:50%; transform:translateY(-50%);
+  display:flex; flex-direction:column; gap:6px; z-index:5; pointer-events:none;
+}
+#prog i{width:4px; height:4px; border-radius:50%; background:var(--mut); opacity:.5; transition:.3s}
+#prog i.on{background:var(--gold); opacity:1; transform:scale(1.5)}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important; transition:none !important}
+  #reel{scroll-behavior:auto}
+  .js .up,.js .pop{opacity:1; transform:none}
+  .js .bar{transform:scaleY(1)}
+  .js .bar-val{opacity:1}
+  .js .bar-star{transform:translateX(-50%) scale(1)}
+}
+@media (max-height:640px){
+  .hero{font-size:clamp(52px,18vw,84px)}
+  .chart{height:30vh}
+  .tl{gap:7px} .tl-row .track{height:19px}
+  .ttext{font-size:13px}
+  .tnum{min-width:46px; font-size:20px; padding:7px 5px}
+}
+/* landscape on short screens: drop the full-screen snap deck, plain scroll */
+@media (orientation:landscape) and (max-height:520px){
+  #reel{scroll-snap-type:none}
+  .card{min-height:0; padding-top:44px; padding-bottom:44px}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="prog" aria-hidden="true"></div>
+
+<main id="reel">
+
+  <!-- 1 · TITLE -->
+  <section class="card" id="c-title">
+    <div class="inner" id="title">
+      <div class="ball up" id="title-ball"></div>
+      <h1 class="up" style="--d:.05s">GSLPS<br>MAGIC</h1>
+      <div class="grade up" style="--d:.15s">B3 &middot; Spring 2026</div>
+      <div class="up" style="--d:.25s"><span class="story">The story so far</span></div>
+      <div class="bigstat up" style="--d:.35s">
+        <div class="hero" id="title-hero" data-count="72" data-fmt="int">72</div>
+        <div class="hero-label">Magic points scored</div>
+      </div>
+      <div class="chips up" style="--d:.45s; justify-content:center">
+        <span class="chip" id="title-chip">6 games of live stats &middot; every number is real</span>
+      </div>
+    </div>
+    <div class="hint" id="hint">
+      <svg class="chev" width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true"><path d="M1 9l8-7 8 7" stroke="#CBC1F2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      swipe up
+    </div>
+  </section>
+
+  <!-- 2 · THE CLIMB -->
+  <section class="card" id="c-climb">
+    <div class="inner">
+      <div class="kicker up">Look how far we&rsquo;ve come</div>
+      <h2 class="up" style="--d:.08s">The climb</h2>
+      <p class="sub up" style="--d:.16s">Magic points scored, round by round.</p>
+      <div class="chart" id="chart"></div>
+      <div class="xlabels" id="xlabels"></div>
+      <div class="gold-banner up" style="--d:1.7s">
+        <span>Round 1: 2 points. Round 7: 18. That is nine times as many.</span>
+      </div>
+      <div class="foot up" style="--d:1.9s">Rounds 3 and 4 are not on the stats site.</div>
+    </div>
+  </section>
+
+  <!-- 3 · MOUNT EVELYN, TWICE -->
+  <section class="card" id="c-bombs">
+    <div class="inner">
+      <div class="kicker up">Same team, seven weeks apart</div>
+      <h2 class="up" style="--d:.08s">Mount Evelyn Bombs, twice</h2>
+      <div class="twice">
+        <div class="panel up" style="--d:.2s">
+          <div class="when">Round 1 &middot; Mon 13 July</div>
+          <div class="n" data-count="2" data-fmt="int">2</div>
+          <div class="what">Magic points</div>
+          <div class="final">final 2&ndash;58</div>
+        </div>
+        <div class="panel up" style="--d:.35s">
+          <div class="when">Round 8 &middot; Tonight, Mon 31 Aug</div>
+          <div class="n" data-count="13" data-fmt="int">13</div>
+          <div class="what">Magic points</div>
+          <div class="final">final 13&ndash;50</div>
+        </div>
+      </div>
+      <div class="held up" style="--d:.55s">
+        <span class="before">36</span>
+        <svg class="arrow" width="26" height="16" viewBox="0 0 26 16" fill="none" aria-hidden="true"><path d="M1 8h21m0 0l-6-6m6 6l-6 6" stroke="#CBC1F2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="after" data-count="16" data-fmt="int">16</span>
+      </div>
+      <div class="held-label up" style="--d:.65s">Their second-half points. We held them to 16 after half time.</div>
+      <div class="gold-banner pop" style="--d:.9s">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1A0F45"/><path d="M2.3 12h19.4M12 2.3v19.4M5 5.2c3.8 3.6 3.8 10 0 13.6M19 5.2c-3.8 3.6-3.8 10 0 13.6" stroke="#FFC53D" stroke-width="1.4" fill="none"/></svg>
+        <span>First basket of the game: MAGIC. Kian, 36 seconds in. We led 2&ndash;0.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- player cards inserted here by JS -->
+
+  <!-- 10 · RUNS -->
+  <section class="card" id="c-runs">
+    <div class="inner">
+      <div class="kicker up">When we get going</div>
+      <h2 class="up" style="--d:.08s">Our best runs</h2>
+      <p class="sub up" style="--d:.16s">Magic points in a row, with no answer from the other team.</p>
+      <div id="runs"></div>
+    </div>
+  </section>
+
+  <!-- 11 · FINAL -->
+  <section class="card" id="c-final">
+    <div class="inner" id="final">
+      <div class="kicker up">Next up</div>
+      <div class="vs up" style="--d:.08s">The Hornets</div>
+      <div class="date up" style="--d:.16s">Monday 7 September &middot; 4:30pm &middot; Kilsyth Court 2</div>
+      <div class="sub up" style="--d:.24s">Top of the ladder. Unbeaten. We like a challenge.</div>
+      <div class="panel target up" style="--d:.36s">
+        <div class="t-k">The target</div>
+        <div class="trow pop" style="--d:.6s">
+          <span class="tnum">10</span>
+          <span class="ttext"><b>Double figures again.</b> We&rsquo;ve hit 10 or more five games in a row. Just play our game.</span>
+        </div>
+      </div>
+      <div class="gomagic pop" style="--d:.95s">GO MAGIC</div>
+      <div class="ball" id="final-ball"></div>
+      <button class="backtop" id="backtop">back to the start</button>
+      <div class="foot">Stats: PlayHQ &middot; Kilsyth After School, Spring 2026</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+"use strict";
+
+/* ================= DATA (all numbers from PlayHQ via
+   gslps_magic_b3_spring2026_results.json; times are mm:ss since tip-off) ==== */
+const DATA = {
+  title: { points: 72, games: 6 },
+  games: [ // Magic points per round (rounds 3-4 not on PlayHQ)
+    { r: 1, opp: "Bombs",    pf: 2  },
+    { r: 2, opp: "Coyotes",  pf: 10 },
+    { r: 5, opp: "St Pats",  pf: 14 },
+    { r: 6, opp: "Ruskin",   pf: 15 },
+    { r: 7, opp: "WYPS",     pf: 18 },
+    { r: 8, opp: "Bombs",    pf: 13 }
+  ],
+  bestRound: 7,
+  players: [
+    { first: "Ezra", last: "Perera", num: "#19",
+      chips: ["6 games", "33 points", "top scorer"],
+      big: { fmt: "int", val: 33, label: "season points" },
+      blurb: "Scored in <b>every single game</b>, the only Magic player to do it. Best game: <b>13 v Ruskin</b>. And he scored Magic&rsquo;s first point of the season.",
+      ftKey: true,
+      rows: [
+        { r: 1, opp: "Bombs",   ev: [["13:36",1]] },
+        { r: 2, opp: "Coyotes", ev: [["32:58",2],["35:48",1],["36:03",1],["38:59",2],["39:08",2]] },
+        { r: 5, opp: "St Pats", ev: [["06:05",2],["16:46",2]] },
+        { r: 6, opp: "Ruskin",  ev: [["13:14",2],["15:53",2],["16:17",2],["17:21",2],["23:58",2],["28:38",1],["35:58",2]] },
+        { r: 7, opp: "WYPS",    ev: [["05:48",2],["09:53",2],["26:00",2]] },
+        { r: 8, opp: "Bombs",   ev: [["34:53",1]] }
+      ] },
+    { first: "Kian", last: "Keshav", num: "#80",
+      chips: ["6 games", "23 points", "8 in Round 8"],
+      big: { fmt: "mmss", val: 36, label: "seconds: fastest Magic basket of the season" },
+      blurb: "First points of the game v the Bombs in Round 8, and Magic led <b>2&ndash;0</b>. Finished with <b>8</b>, equal to his season best. <b>23</b> for the year.",
+      ftKey: true,
+      rows: [
+        { r: 1, opp: "Bombs",   ev: [["38:45",1]] },
+        { r: 2, opp: "Coyotes", ev: [["36:26",2]] },
+        { r: 5, opp: "St Pats", ev: [["08:42",2],["15:39",2],["18:40",2],["24:09",2]] },
+        { r: 6, opp: "Ruskin",  ev: [] },
+        { r: 7, opp: "WYPS",    ev: [["13:37",2],["14:22",2]] },
+        { r: 8, opp: "Bombs",   ev: [["00:36",2],["11:29",2],["24:17",2],["26:04",2]] }
+      ] },
+    { first: "Oliver", last: "Archibald", num: "#21",
+      chips: ["6 games", "6 points", "wore #35, now #21"],
+      big: { fmt: "int", val: 6, label: "points in one game v WYPS" },
+      blurb: "Three baskets in Round 7, two of them just <b>32 seconds apart</b>. Played all six games.",
+      rows: [
+        { r: 1, opp: "Bombs",   ev: [] },
+        { r: 2, opp: "Coyotes", ev: [] },
+        { r: 5, opp: "St Pats", ev: [] },
+        { r: 6, opp: "Ruskin",  ev: [] },
+        { r: 7, opp: "WYPS",    ev: [["11:08",2],["11:40",2],["36:32",2]] },
+        { r: 8, opp: "Bombs",   ev: [] }
+      ] },
+    { first: "Henry", last: "Trawley", num: "#10",
+      chips: ["4 games", "6 points", "joined Round 5"],
+      big: { fmt: "int", val: 3, label: "baskets in his 4 games" },
+      blurb: "Scored in <b>three of his four games</b> since joining: v St Patricks, v WYPS and v the Bombs. Every one a clean two.",
+      rows: [
+        { r: 5, opp: "St Pats", ev: [["16:21",2]] },
+        { r: 6, opp: "Ruskin",  ev: [] },
+        { r: 7, opp: "WYPS",    ev: [["16:06",2]] },
+        { r: 8, opp: "Bombs",   ev: [["33:27",2]] }
+      ] },
+    { first: "Levi", last: "Mu", num: "#8",
+      chips: ["6 games", "4 points", "1 foul all season"],
+      big: { fmt: "int", val: 2, label: "baskets, both in the last three rounds" },
+      blurb: "First career basket v Ruskin, then another v the Bombs. And just <b>1 foul all season</b>, the cleanest hands on the team.",
+      rows: [
+        { r: 1, opp: "Bombs",   ev: [] },
+        { r: 2, opp: "Coyotes", ev: [] },
+        { r: 5, opp: "St Pats", ev: [] },
+        { r: 6, opp: "Ruskin",  ev: [["15:37",2]] },
+        { r: 7, opp: "WYPS",    ev: [] },
+        { r: 8, opp: "Bombs",   ev: [["13:00",2]] }
+      ] },
+    { first: "Steven", last: "Chen", num: "#86",
+      chips: ["6 games", "0 missed"],
+      big: { fmt: "frac", val: 6, of: 6, label: "games played. Never missed one." },
+      blurb: "On deck <b>every single Monday</b>, all season. In Round 8 he was part of the team that held the Bombs to <b>16</b> after half time.",
+      tiles: [
+        { r: 1, opp: "Bombs" }, { r: 2, opp: "Coyotes" }, { r: 5, opp: "St Pats" },
+        { r: 6, opp: "Ruskin" }, { r: 7, opp: "WYPS" }, { r: 8, opp: "Bombs" }
+      ] }
+  ],
+  runs: [ // longest unanswered runs (from highlights_per_game)
+    { r: 2, opp: "Coyotes",  chips: [["Ezra",1],["Ezra",1],["Kian",2]],  total: 4 },
+    { r: 5, opp: "St Pats",  chips: [["Kian",2],["Henry",2],["Ezra",2]], total: 6 },
+    { r: 6, opp: "Ruskin",   chips: [["Levi",2],["Ezra",2],["Ezra",2]],  total: 6 }
+  ]
+};
+const GAME_SECONDS = 2400; // two 20-minute halves
+
+/* ================= helpers ================= */
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const toSec = m => { const [a,b] = m.split(":").map(Number); return a*60+b; };
+const pad = n => String(n).padStart(2,"0");
+const fmtVal = (fmt, v, of) =>
+  fmt === "mmss" ? "0:"+pad(v) : fmt === "frac" ? v+"/"+of : String(v);
+
+const ballSVG = size => '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" aria-hidden="true">'
+  + '<circle cx="12" cy="12" r="11" fill="#FFC53D"/>'
+  + '<path d="M1 12h22M12 1v22M4.2 4.6c4.4 4.1 4.4 10.7 0 14.8M19.8 4.6c-4.4 4.1-4.4 10.7 0 14.8" stroke="#150A3D" stroke-width="1.5" fill="none"/></svg>';
+
+/* ================= build: title balls + title numbers from DATA ========= */
+document.getElementById("title-ball").innerHTML = ballSVG(64);
+document.getElementById("final-ball").innerHTML = ballSVG(52);
+(function(){
+  const h = document.getElementById("title-hero");
+  h.dataset.count = DATA.title.points;
+  h.textContent = DATA.title.points;
+  document.getElementById("title-chip").textContent =
+    DATA.title.games + " games of live stats · every number is real";
+})();
+
+/* ================= build: climb chart ================= */
+(function(){
+  const chart = document.getElementById("chart");
+  const xl = document.getElementById("xlabels");
+  const max = Math.max(...DATA.games.map(g=>g.pf));
+  DATA.games.forEach((g,i)=>{
+    const col = document.createElement("div");
+    col.className = "col" + (g.r===DATA.bestRound ? " best":"");
+    const pct = g.pf/max*82; // leave headroom for value label
+    col.innerHTML =
+      '<div class="bar" style="height:'+pct+'%; --d:'+(0.25+i*0.18)+'s"></div>'
+      + '<div class="bar-val" style="bottom:calc('+pct+'% + 6px); --dv:'+(0.65+i*0.18)+'s">'+g.pf+'</div>'
+      + (g.r===DATA.bestRound
+        ? '<div class="bar-star" style="bottom:calc('+pct+'% + 30px)">'
+          + '<svg width="22" height="22" viewBox="0 0 24 24" fill="#FFC53D" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg></div>'
+        : '');
+    chart.appendChild(col);
+    const lab = document.createElement("span");
+    lab.textContent = "R"+g.r;
+    xl.appendChild(lab);
+  });
+})();
+
+/* ================= build: player cards ================= */
+(function(){
+  const reel = document.getElementById("reel");
+  const before = document.getElementById("c-runs");
+  DATA.players.forEach(p=>{
+    const sec = document.createElement("section");
+    sec.className = "card";
+    sec.id = "c-p-"+p.first.toLowerCase();
+
+    let mid;
+    if (p.tiles){
+      mid = '<div class="tiles">' + p.tiles.map((t,i)=>
+        '<div class="tile pop" style="--d:'+(0.5+i*0.14)+'s"><div class="tr">R'+t.r+'</div><div class="to">'+t.opp+'</div></div>'
+      ).join("") + '</div>';
+    } else {
+      let di = 0;
+      mid = '<div class="tl">' + p.rows.map(row=>{
+        const dots = row.ev.map(e=>{
+          const x = toSec(e[0])/GAME_SECONDS*100;
+          const d = 0.5 + (di++)*0.13;
+          return '<span class="dot pop'+(e[1]===1?" ft":"")+'" style="left:'+x.toFixed(1)+'%; --d:'+d+'s"></span>';
+        }).join("");
+        return '<div class="tl-row"><div class="tl-lab">R'+row.r+' &middot; '+row.opp+'</div>'
+          + '<div class="track"><span class="ht"></span>'
+          + (row.ev.length ? dots : '<span class="none">played</span>')
+          + '</div></div>';
+      }).join("") + '</div>'
+      + (p.ftKey ? '<div class="tl-key"><i>&#9679;</i> basket &nbsp; <i>&#9675;</i> free throw &nbsp; | half time</div>' : '');
+    }
+
+    sec.innerHTML = '<div class="inner">'
+      + '<div class="phead up"><div class="jersey">'+p.num+'</div>'
+      + '<div><div class="pname">'+p.first+'</div><div class="psur">'+p.last+'</div></div></div>'
+      + '<div class="chips up" style="--d:.1s">'+p.chips.map(c=>'<span class="chip">'+c+'</span>').join("")+'</div>'
+      + '<div class="bigstat up" style="--d:.2s">'
+      + '<div class="hero" data-count="'+p.big.val+'" data-fmt="'+p.big.fmt+'"'+(p.big.of?' data-of="'+p.big.of+'"':'')+'>'+fmtVal(p.big.fmt,p.big.val,p.big.of)+'</div>'
+      + '<div class="hero-label">'+p.big.label+'</div></div>'
+      + '<div class="blurb up" style="--d:.3s">'+p.blurb+'</div>'
+      + mid
+      + '</div>';
+    reel.insertBefore(sec, before);
+  });
+})();
+
+/* ================= build: runs ================= */
+(function(){
+  const box = document.getElementById("runs");
+  DATA.runs.forEach((run,ri)=>{
+    const row = document.createElement("div");
+    row.className = "run";
+    const base = 0.3 + ri*0.55;
+    row.innerHTML = '<div class="run-head up" style="--d:'+base+'s">Round '+run.r+' v '+run.opp+'</div>'
+      + '<div class="run-line">'
+      + run.chips.map((c,i)=>'<span class="rchip pop" style="--d:'+(base+0.12+i*0.16)+'s">'+c[0]+' <b>+'+c[1]+'</b></span>').join("")
+      + '<span class="rtotal pop" style="--d:'+(base+0.12+run.chips.length*0.16+0.1)+'s">= '+run.total+' straight</span>'
+      + '</div>';
+    box.appendChild(row);
+  });
+})();
+
+/* ================= progress dots ================= */
+const cards = [...document.querySelectorAll(".card")];
+const prog = document.getElementById("prog");
+cards.forEach(()=>prog.appendChild(document.createElement("i")));
+const progDots = [...prog.children];
+
+/* ================= count-ups ================= */
+function runCounts(card){
+  card.querySelectorAll("[data-count]").forEach(el=>{
+    const target = +el.dataset.count, fmt = el.dataset.fmt, of = el.dataset.of;
+    if (RM){ el.textContent = fmtVal(fmt,target,of); return; }
+    if (el._raf) cancelAnimationFrame(el._raf);
+    const dur = 1300, t0 = performance.now();
+    const tick = now=>{
+      const t = Math.min(1,(now-t0)/dur);
+      const eased = 1-Math.pow(1-t,3);
+      el.textContent = fmtVal(fmt, Math.round(target*eased), of);
+      if (t<1) el._raf = requestAnimationFrame(tick);
+    };
+    el._raf = requestAnimationFrame(tick);
+  });
+}
+function resetCounts(card){
+  card.querySelectorAll("[data-count]").forEach(el=>{
+    if (el._raf) cancelAnimationFrame(el._raf);
+    el.textContent = fmtVal(el.dataset.fmt, 0, el.dataset.of);
+  });
+}
+
+/* ================= scroll-triggered animation ================= */
+const reel = document.getElementById("reel");
+if (RM){
+  cards.forEach(c=>{ c.classList.add("in"); runCounts(c); });
+} else {
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(en=>{
+      const idx = cards.indexOf(en.target);
+      if (en.isIntersecting){
+        en.target.classList.add("in");
+        runCounts(en.target);
+        progDots.forEach((d,i)=>d.classList.toggle("on", i===idx));
+      } else {
+        en.target.classList.remove("in");
+        resetCounts(en.target);
+      }
+    });
+  }, { root: reel, threshold: 0.25 });
+  cards.forEach(c=>io.observe(c));
+}
+
+/* swipe hint hides after first scroll */
+reel.addEventListener("scroll", function once(){
+  const h = document.getElementById("hint");
+  if (h) h.style.opacity = "0";
+  reel.removeEventListener("scroll", once);
+}, { passive:true });
+
+/* back to top */
+document.getElementById("backtop").addEventListener("click", ()=>{
+  // instant jump: smooth scrolling stalls on intermediate snap-stop:always cards
+  reel.style.scrollBehavior = "auto";
+  reel.scrollTop = 0;
+  reel.style.scrollBehavior = "";
+});
+
+/* everything booted cleanly: switch on the animated (hidden-until-revealed)
+   styles. If any script error occurs above, this never runs and the page
+   stays fully visible as a static reel. */
+document.documentElement.classList.add("js");
+</script>
+</body>
+</html>
