@@ -247,6 +247,10 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
 }
 .ttext{font-size:14px; line-height:1.4; color:var(--ink2); font-weight:600}
 .ttext b{color:var(--ink)}
+.slogan{
+  font-size:clamp(27px,8.5vw,40px); font-weight:900; letter-spacing:-.015em;
+  line-height:1.12; margin-top:20px;
+}
 .gomagic{
   font-size:clamp(52px,17vw,84px); font-weight:900; letter-spacing:-.03em;
   color:var(--gold); line-height:1; margin-top:10px;
@@ -388,10 +392,11 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
         <div class="t-k">The target</div>
         <div class="trow pop" style="--d:.6s">
           <span class="tnum">10</span>
-          <span class="ttext"><b>Double figures again.</b> We&rsquo;ve hit 10 or more five games in a row. Just play our game.</span>
+          <span class="ttext"><b>Double figures again.</b> We&rsquo;ve hit 10 or more five games in a row.</span>
         </div>
       </div>
-      <div class="gomagic pop" style="--d:.95s">GO MAGIC</div>
+      <div class="slogan pop" style="--d:.9s">Just play our game.</div>
+      <div class="gomagic pop" style="--d:1.2s">GO MAGIC</div>
       <div class="ball" id="final-ball"></div>
       <button class="backtop" id="backtop">back to the start</button>
       <div class="foot">Stats: PlayHQ &middot; Kilsyth After School, Spring 2026</div>
@@ -582,10 +587,12 @@ document.getElementById("final-ball").innerHTML = ballSVG(52);
   sq.innerHTML = '<div class="inner">'
     + '<div class="kicker up">The 2026 Magic</div>'
     + '<h2 class="up" style="--d:.08s">Six players, one team</h2>'
-    + '<p class="sub up" style="--d:.16s">72 points this season. Nobody scores without a team around him.</p>'
+    + '<p class="sub up" style="--d:.16s">72 points this season.</p>'
     + '<div class="squad">' + squad.map((s,i)=>
         '<div class="sq pop" style="--d:'+(0.3+i*0.15)+'s"><div class="jersey">'+s.num+'</div><div class="sqname">'+s.first+'</div></div>').join("")
-    + '</div></div>';
+    + '</div>'
+    + '<div class="slogan pop" style="--d:1.3s">Nobody scores without a team around them.</div>'
+    + '</div>';
   reel.insertBefore(sq, document.getElementById("c-final"));
 })();
 
