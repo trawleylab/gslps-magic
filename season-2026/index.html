@@ -11,7 +11,7 @@
      gslps_magic_b3_spring2026_results.json), update his chips/big/blurb, and
      bump DATA.title.points and DATA.title.games.
   2) HAND-EDITED sections you must update in the HTML itself: the
-     "Mount Evelyn, twice" card and the final "Next up" card (opponent, date,
+     "Round 9 v The Hornets" card and the final "Next up" card (opponent, date,
      targets). The Hornets targets come from
      "HORNETS out/the_hornets_spring2026_all_games.json".
   3) team.html is the no-individual-stats version: same DATA, same steps.
@@ -307,11 +307,11 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
       <div class="grade up" style="--d:.15s">B3 &middot; Spring 2026</div>
       <div class="up" style="--d:.25s"><span class="story">The story so far</span></div>
       <div class="bigstat up" style="--d:.35s">
-        <div class="hero" id="title-hero" data-count="72" data-fmt="int">72</div>
+        <div class="hero" id="title-hero" data-count="78" data-fmt="int">78</div>
         <div class="hero-label">Magic points scored</div>
       </div>
       <div class="chips up" style="--d:.45s; justify-content:center">
-        <span class="chip" id="title-chip">6 games of live stats &middot; every number is real</span>
+        <span class="chip" id="title-chip">7 games of live stats &middot; every number is real</span>
       </div>
     </div>
     <div class="hint" id="hint">
@@ -335,41 +335,59 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
     </div>
   </section>
 
-  <!-- 3 · MOUNT EVELYN, TWICE -->
-  <section class="card" id="c-bombs">
+  <!-- 3 · ROUND 9 v THE HORNETS -->
+  <section class="card" id="c-hornets">
     <div class="inner">
-      <div class="kicker up">Same team, seven weeks apart</div>
-      <h2 class="up" style="--d:.08s">Mount Evelyn Bombs, twice</h2>
+      <div class="kicker up">Round 9 &middot; Monday 7 September</div>
+      <h2 class="up" style="--d:.08s">We played the unbeaten team</h2>
+      <p class="sub up" style="--d:.16s">The Hornets have won all nine of their games. They score 47 a game. We had five players and nobody on the bench.</p>
       <div class="twice">
-        <div class="panel up" style="--d:.2s">
-          <div class="when">Round 1 &middot; Mon 13 July</div>
-          <div class="n" data-count="2" data-fmt="int">2</div>
+        <div class="panel up" style="--d:.3s">
+          <div class="when">First half</div>
+          <div class="n" data-count="0" data-fmt="int">0</div>
           <div class="what">Magic points</div>
-          <div class="final">final 2&ndash;58</div>
         </div>
-        <div class="panel up" style="--d:.35s">
-          <div class="when">Round 8 &middot; Mon 31 Aug</div>
-          <div class="n" data-count="13" data-fmt="int">13</div>
+        <div class="panel up" style="--d:.45s">
+          <div class="when">Second half</div>
+          <div class="n" data-count="6" data-fmt="int">6</div>
           <div class="what">Magic points</div>
-          <div class="final">final 13&ndash;50</div>
         </div>
       </div>
-      <div class="held up" style="--d:.55s">
-        <span class="before">36</span>
-        <svg class="arrow" width="26" height="16" viewBox="0 0 26 16" fill="none" aria-hidden="true"><path d="M1 8h21m0 0l-6-6m6 6l-6 6" stroke="#CBC1F2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span class="after" data-count="16" data-fmt="int">16</span>
-      </div>
-      <div class="held-label up" style="--d:.65s">Their second-half points. We held them to 16 after half time.</div>
-      <div class="gold-banner pop" style="--d:.9s">
+      <div class="held-label up" style="--d:.6s">We scored more after half time than we did in the whole first half. Second week in a row we have done that.</div>
+      <div class="gold-banner pop" style="--d:.85s">
         <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1A0F45"/><path d="M2.3 12h19.4M12 2.3v19.4M5 5.2c3.8 3.6 3.8 10 0 13.6M19 5.2c-3.8 3.6-3.8 10 0 13.6" stroke="#FFC53D" stroke-width="1.4" fill="none"/></svg>
-        <span>First basket of the game: MAGIC. Kian, 36 seconds in. We led 2&ndash;0.</span>
+        <span>Levi scored <b>40 seconds after half time</b>. Our first points of the night, and his <b>third basket in four rounds</b>.</span>
       </div>
     </div>
   </section>
 
-  <!-- player cards inserted here by JS -->
+  <!-- 4 · THE FIRST TEN MINUTES -->
+  <section class="card" id="c-ten">
+    <div class="inner">
+      <div class="kicker up">The best thing we did all night</div>
+      <h2 class="up" style="--d:.08s">The first ten minutes</h2>
+      <div class="bigstat up" style="--d:.2s">
+        <div class="hero" data-count="9" data-fmt="int">9</div>
+        <div class="hero-label">points. That is all the best team in the competition got in ten minutes</div>
+      </div>
+      <div class="rank">
+        <div class="rk"><span class="n">4</span><span>BILLA Bulls</span></div>
+        <div class="rk"><span class="n">5</span><span>Birmingham Blazers</span></div>
+        <div class="rk"><span class="n">7</span><span>Mount Evelyn Bombs</span></div>
+        <div class="rk me"><span class="n">9</span><span>GSLPS MAGIC</span></div>
+        <div class="rk"><span class="n">12</span><span>WYPS Ballers</span></div>
+        <div class="rk"><span class="n">14</span><span>Birmingham Blazers</span></div>
+        <div class="rk"><span class="n">19</span><span>Coyotes 3</span></div>
+        <div class="rk"><span class="n">22</span><span>MEPS Hawks</span></div>
+      </div>
+      <div class="foot up" style="--d:1.1s">Hornets points in the first ten minutes, every game they have played with stats.</div>
+      <div class="gold-banner pop" style="--d:1.3s">
+        <span>Only three teams all season have held the Hornets lower than we did. And we did it with five players.</span>
+      </div>
+    </div>
+  </section>
 
-  <!-- 10 · RUNS -->
+  <!-- 5 · EVERYONE HAS SCORED -->
   <section class="card" id="c-everyone">
     <div class="inner">
       <div class="kicker up">Round 9, and a first</div>
@@ -393,28 +411,9 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
     </div>
   </section>
 
-  <section class="card" id="c-ten">
-    <div class="inner">
-      <div class="kicker up">Round 9 v The Hornets</div>
-      <h2 class="up" style="--d:.08s">The first ten minutes</h2>
-      <p class="sub up" style="--d:.16s">The Hornets have not lost a game all year and score 47 a game. For the first ten minutes on Monday, with only five of us and nobody on the bench, we held them to nine.</p>
-      <div class="bigstat up" style="--d:.26s">
-        <div class="hero" data-count="9" data-fmt="int">9</div>
-        <div class="hero-label">points in ten minutes. Only three teams all season have done better</div>
-      </div>
-      <div class="rank">
-        <div class="rk"><span class="n">4</span><span>BILLA Bulls</span></div>
-        <div class="rk"><span class="n">5</span><span>Birmingham Blazers</span></div>
-        <div class="rk"><span class="n">7</span><span>Mount Evelyn Bombs</span></div>
-        <div class="rk me"><span class="n">9</span><span>GSLPS MAGIC</span></div>
-        <div class="rk"><span class="n">12</span><span>WYPS Ballers</span></div>
-        <div class="rk"><span class="n">19</span><span>Coyotes 3</span></div>
-        <div class="rk"><span class="n">22</span><span>MEPS Hawks</span></div>
-      </div>
-      <div class="foot up" style="--d:1.1s">Hornets points conceded in the first ten minutes, every game this season.</div>
-    </div>
-  </section>
+  <!-- player cards inserted here by JS -->
 
+  <!-- 10 · RUNS -->
   <section class="card" id="c-runs">
     <div class="inner">
       <div class="kicker up">When we get going</div>
@@ -430,7 +429,7 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
       <div class="kicker up">Next up</div>
       <div class="vs up" style="--d:.08s">BILLA Bulls</div>
       <div class="date up" style="--d:.16s">Monday 14 September &middot; 4:30pm &middot; Lilydale Court 3</div>
-      <div class="sub up" style="--d:.24s">The hardest part of our draw is behind us.</div>
+      <div class="sub up" style="--d:.24s">Fifth on the ladder, and the team that has run the Hornets closest all season.</div>
       <div class="panel target up" style="--d:.36s">
         <div class="t-k">The target</div>
         <div class="trow pop" style="--d:.6s">
@@ -531,7 +530,7 @@ const DATA = {
         { r: 9, opp: "Hornets", ev: [["20:40",2]] }
       ] },
     { first: "Steven", last: "Chen", num: "#86",
-      chips: ["7 games", "0 missed", "first basket!"],
+      chips: ["7 games", "played every week", "first basket!"],
       big: { fmt: "int", val: 2, label: "points v The Hornets. His first of the season." },
       blurb: "Seven games, <b>never missed one</b>. Then with <b>2 minutes 21 seconds left</b> against the team that has not lost all year, Steven scored. Every Magic player has now scored this season.",
       rows: [
