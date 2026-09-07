@@ -209,6 +209,13 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
 .tile .tr{font-size:15px; font-weight:900}
 .tile .to{font-size:11px; font-weight:800; opacity:.75}
 
+/* ---------- ranking list (first ten minutes) ---------- */
+.rank{display:flex; flex-direction:column; gap:8px; margin-top:16px}
+.rk{display:flex; align-items:center; gap:11px; font-size:14px; color:var(--ink2); font-weight:600}
+.rk .n{flex:0 0 30px; text-align:right; font-weight:900; font-variant-numeric:tabular-nums}
+.rk.me{color:var(--ink)}
+.rk.me .n{color:var(--gold); font-size:18px}
+
 /* ---------- runs card ---------- */
 .run{margin:13px 0}
 .run-head{color:var(--ink2); font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; margin-bottom:7px}
@@ -322,9 +329,9 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
       <div class="chart" id="chart"></div>
       <div class="xlabels" id="xlabels"></div>
       <div class="gold-banner up" style="--d:1.7s">
-        <span>Round 1: 2 points. Round 7: 18. That is nine times as many.</span>
+        <span>Round 1: 2 points. Round 7: 18. And double figures in five of our last six.</span>
       </div>
-      <div class="foot up" style="--d:1.9s">Rounds 3 and 4 are not on the stats site.</div>
+      <div class="foot up" style="--d:1.9s">Round 9 was The Hornets, top of the ladder and unbeaten, with only five of us available. Rounds 3 and 4 are not on the stats site.</div>
     </div>
   </section>
 
@@ -341,7 +348,7 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
           <div class="final">final 2&ndash;58</div>
         </div>
         <div class="panel up" style="--d:.35s">
-          <div class="when">Round 8 &middot; Tonight, Mon 31 Aug</div>
+          <div class="when">Round 8 &middot; Mon 31 Aug</div>
           <div class="n" data-count="13" data-fmt="int">13</div>
           <div class="what">Magic points</div>
           <div class="final">final 13&ndash;50</div>
@@ -363,6 +370,51 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
   <!-- player cards inserted here by JS -->
 
   <!-- 10 · RUNS -->
+  <section class="card" id="c-everyone">
+    <div class="inner">
+      <div class="kicker up">Round 9, and a first</div>
+      <h2 class="up" style="--d:.08s">Everyone has scored</h2>
+      <p class="sub up" style="--d:.16s">With <b>2 minutes 21 seconds left</b> against the only unbeaten team in the competition, Steven scored his first basket of the season.</p>
+      <div class="bigstat up" style="--d:.26s">
+        <div class="hero" data-count="6" data-fmt="int">6</div>
+        <div class="hero-label">out of 6. Every Magic player has scored this season</div>
+      </div>
+      <div class="chips up" style="--d:.4s">
+        <span class="chip"><b>#8</b> Levi</span>
+        <span class="chip"><b>#10</b> Henry</span>
+        <span class="chip"><b>#19</b> Ezra</span>
+        <span class="chip"><b>#21</b> Oliver</span>
+        <span class="chip"><b>#80</b> Kian</span>
+        <span class="chip"><b>#86</b> Steven</span>
+      </div>
+      <div class="gold-banner pop" style="--d:.75s">
+        <span>Not one player left out. Every single boy has put points on the board in 2026.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="c-ten">
+    <div class="inner">
+      <div class="kicker up">Round 9 v The Hornets</div>
+      <h2 class="up" style="--d:.08s">The first ten minutes</h2>
+      <p class="sub up" style="--d:.16s">The Hornets have not lost a game all year and score 47 a game. For the first ten minutes on Monday, with only five of us and nobody on the bench, we held them to nine.</p>
+      <div class="bigstat up" style="--d:.26s">
+        <div class="hero" data-count="9" data-fmt="int">9</div>
+        <div class="hero-label">points in ten minutes. Only three teams all season have done better</div>
+      </div>
+      <div class="rank">
+        <div class="rk"><span class="n">4</span><span>BILLA Bulls</span></div>
+        <div class="rk"><span class="n">5</span><span>Birmingham Blazers</span></div>
+        <div class="rk"><span class="n">7</span><span>Mount Evelyn Bombs</span></div>
+        <div class="rk me"><span class="n">9</span><span>GSLPS MAGIC</span></div>
+        <div class="rk"><span class="n">12</span><span>WYPS Ballers</span></div>
+        <div class="rk"><span class="n">19</span><span>Coyotes 3</span></div>
+        <div class="rk"><span class="n">22</span><span>MEPS Hawks</span></div>
+      </div>
+      <div class="foot up" style="--d:1.1s">Hornets points conceded in the first ten minutes, every game this season.</div>
+    </div>
+  </section>
+
   <section class="card" id="c-runs">
     <div class="inner">
       <div class="kicker up">When we get going</div>
@@ -376,14 +428,14 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
   <section class="card" id="c-final">
     <div class="inner" id="final">
       <div class="kicker up">Next up</div>
-      <div class="vs up" style="--d:.08s">The Hornets</div>
-      <div class="date up" style="--d:.16s">Monday 7 September &middot; 4:30pm &middot; Kilsyth Court 2</div>
-      <div class="sub up" style="--d:.24s">Top of the ladder. Unbeaten. We like a challenge.</div>
+      <div class="vs up" style="--d:.08s">BILLA Bulls</div>
+      <div class="date up" style="--d:.16s">Monday 14 September &middot; 4:30pm &middot; Lilydale Court 3</div>
+      <div class="sub up" style="--d:.24s">The hardest part of our draw is behind us.</div>
       <div class="panel target up" style="--d:.36s">
         <div class="t-k">The target</div>
         <div class="trow pop" style="--d:.6s">
           <span class="tnum">10</span>
-          <span class="ttext"><b>Double figures again.</b> We&rsquo;ve hit 10 or more five games in a row.</span>
+          <span class="ttext"><b>Back to double figures.</b> We have done it five times already this season.</span>
         </div>
       </div>
       <div class="slogan pop" style="--d:.9s">Just play our game.</div>
@@ -402,20 +454,21 @@ h2{font-size:clamp(30px,9vw,42px); margin-bottom:6px}
 /* ================= DATA (all numbers from PlayHQ via
    gslps_magic_b3_spring2026_results.json; times are mm:ss since tip-off) ==== */
 const DATA = {
-  title: { points: 72, games: 6 },
+  title: { points: 78, games: 7 },
   games: [ // Magic points per round (rounds 3-4 not on PlayHQ)
     { r: 1, opp: "Bombs",    pf: 2  },
     { r: 2, opp: "Coyotes",  pf: 10 },
     { r: 5, opp: "St Pats",  pf: 14 },
     { r: 6, opp: "Ruskin",   pf: 15 },
     { r: 7, opp: "WYPS",     pf: 18 },
-    { r: 8, opp: "Bombs",    pf: 13 }
+    { r: 8, opp: "Bombs",    pf: 13 },
+    { r: 9, opp: "Hornets",  pf: 6  }
   ],
   bestRound: 7,
   players: [
     { first: "Ezra", last: "Perera", num: "#19",
-      chips: ["6 games", "33 points", "top scorer"],
-      big: { fmt: "int", val: 33, label: "season points" },
+      chips: ["7 games", "35 points", "top scorer"],
+      big: { fmt: "int", val: 35, label: "season points" },
       blurb: "Scored in <b>every single game</b>, the only Magic player to do it. Best game: <b>13 v Ruskin</b>. And he scored Magic&rsquo;s first point of the season.",
       ftKey: true,
       rows: [
@@ -424,10 +477,11 @@ const DATA = {
         { r: 5, opp: "St Pats", ev: [["06:05",2],["16:46",2]] },
         { r: 6, opp: "Ruskin",  ev: [["13:14",2],["15:53",2],["16:17",2],["17:21",2],["23:58",2],["28:38",1],["35:58",2]] },
         { r: 7, opp: "WYPS",    ev: [["05:48",2],["09:53",2],["26:00",2]] },
-        { r: 8, opp: "Bombs",   ev: [["34:53",1]] }
+        { r: 8, opp: "Bombs",   ev: [["34:53",1]] },
+        { r: 9, opp: "Hornets", ev: [["33:34",2]] }
       ] },
     { first: "Kian", last: "Keshav", num: "#80",
-      chips: ["6 games", "23 points", "8 in Round 8"],
+      chips: ["6 games", "23 points", "8 v the Bombs"],
       big: { fmt: "mmss", val: 36, label: "seconds: fastest Magic basket of the season" },
       blurb: "First points of the game v the Bombs in Round 8, and Magic led <b>2&ndash;0</b>. Finished with <b>8</b>, equal to his season best. <b>23</b> for the year.",
       ftKey: true,
@@ -440,46 +494,54 @@ const DATA = {
         { r: 8, opp: "Bombs",   ev: [["00:36",2],["11:29",2],["24:17",2],["26:04",2]] }
       ] },
     { first: "Oliver", last: "Archibald", num: "#21",
-      chips: ["6 games", "6 points", "wore #35, now #21"],
+      chips: ["7 games", "6 points", "never missed one"],
       big: { fmt: "int", val: 6, label: "points in one game v WYPS" },
-      blurb: "Three baskets in Round 7, two of them just <b>32 seconds apart</b>. Played all six games.",
+      blurb: "Three baskets in Round 7, two of them just <b>32 seconds apart</b>. Has played <b>every single game</b> this season.",
       rows: [
         { r: 1, opp: "Bombs",   ev: [] },
         { r: 2, opp: "Coyotes", ev: [] },
         { r: 5, opp: "St Pats", ev: [] },
         { r: 6, opp: "Ruskin",  ev: [] },
         { r: 7, opp: "WYPS",    ev: [["11:08",2],["11:40",2],["36:32",2]] },
-        { r: 8, opp: "Bombs",   ev: [] }
+        { r: 8, opp: "Bombs",   ev: [] },
+        { r: 9, opp: "Hornets", ev: [] }
       ] },
     { first: "Henry", last: "Trawley", num: "#10",
-      chips: ["4 games", "6 points", "joined Round 5"],
-      big: { fmt: "int", val: 3, label: "baskets in his 4 games" },
-      blurb: "Scored in <b>three of his four games</b> since joining: v St Patricks, v WYPS and v the Bombs. Every one a clean two.",
+      chips: ["5 games", "6 points", "joined Round 5"],
+      big: { fmt: "int", val: 3, label: "baskets since he joined" },
+      blurb: "Scored in <b>three of his five games</b> since joining: v St Patricks, v WYPS and v the Bombs. Every one a clean two.",
       rows: [
         { r: 5, opp: "St Pats", ev: [["16:21",2]] },
         { r: 6, opp: "Ruskin",  ev: [] },
         { r: 7, opp: "WYPS",    ev: [["16:06",2]] },
-        { r: 8, opp: "Bombs",   ev: [["33:27",2]] }
+        { r: 8, opp: "Bombs",   ev: [["33:27",2]] },
+        { r: 9, opp: "Hornets", ev: [] }
       ] },
     { first: "Levi", last: "Mu", num: "#8",
-      chips: ["6 games", "4 points", "1 foul all season"],
-      big: { fmt: "int", val: 2, label: "baskets, both in the last three rounds" },
-      blurb: "First career basket v Ruskin, then another v the Bombs. And just <b>1 foul all season</b>, the cleanest hands on the team.",
+      chips: ["7 games", "6 points", "3 baskets"],
+      big: { fmt: "int", val: 3, label: "baskets, all in the last four rounds" },
+      blurb: "First basket v Ruskin, then the Bombs, then <b>the first Magic score of the night v the Hornets</b>, 40 seconds after half time. Getting better every week.",
       rows: [
         { r: 1, opp: "Bombs",   ev: [] },
         { r: 2, opp: "Coyotes", ev: [] },
         { r: 5, opp: "St Pats", ev: [] },
         { r: 6, opp: "Ruskin",  ev: [["15:37",2]] },
         { r: 7, opp: "WYPS",    ev: [] },
-        { r: 8, opp: "Bombs",   ev: [["13:00",2]] }
+        { r: 8, opp: "Bombs",   ev: [["13:00",2]] },
+        { r: 9, opp: "Hornets", ev: [["20:40",2]] }
       ] },
     { first: "Steven", last: "Chen", num: "#86",
-      chips: ["6 games", "0 missed"],
-      big: { fmt: "frac", val: 6, of: 6, label: "games played. Never missed one." },
-      blurb: "On deck <b>every single Monday</b>, all season. In Round 8 he was part of the team that held the Bombs to <b>16</b> after half time.",
-      tiles: [
-        { r: 1, opp: "Bombs" }, { r: 2, opp: "Coyotes" }, { r: 5, opp: "St Pats" },
-        { r: 6, opp: "Ruskin" }, { r: 7, opp: "WYPS" }, { r: 8, opp: "Bombs" }
+      chips: ["7 games", "0 missed", "first basket!"],
+      big: { fmt: "int", val: 2, label: "points v The Hornets. His first of the season." },
+      blurb: "Seven games, <b>never missed one</b>. Then with <b>2 minutes 21 seconds left</b> against the team that has not lost all year, Steven scored. Every Magic player has now scored this season.",
+      rows: [
+        { r: 1, opp: "Bombs",   ev: [] },
+        { r: 2, opp: "Coyotes", ev: [] },
+        { r: 5, opp: "St Pats", ev: [] },
+        { r: 6, opp: "Ruskin",  ev: [] },
+        { r: 7, opp: "WYPS",    ev: [] },
+        { r: 8, opp: "Bombs",   ev: [] },
+        { r: 9, opp: "Hornets", ev: [["37:39",2]] }
       ] }
   ],
   runs: [ // longest unanswered runs (from highlights_per_game)
